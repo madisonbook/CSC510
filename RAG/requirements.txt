@@ -1,0 +1,7 @@
+chromadb>=0.5.3
+sentence-transformers>=3.0.1
+pypdf>=4.2.0
+python-dotenv>=1.0.1
+fastapi>=0.112.0
+uvicorn>=0.30.0
+openai>=1.37.0
