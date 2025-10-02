@@ -24,9 +24,9 @@ docker-compose logs -f
 ### View logs for specific service
 docker-compose logs -f backend
 
-# Restart a service
+### Restart a service
 docker-compose restart backend
 
-# Execute commands in container
+### Execute commands in container
 docker-compose exec backend bash
 docker-compose exec mongodb mongosh
