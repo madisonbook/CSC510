@@ -1,27 +1,27 @@
-Group 26
+# Group 26
 
-### 1. Install Prerequisites
+# 1. Install Prerequisites
 - Docker Desktop
 - Docker Compose
 
-### 2. Docker Commands
+# 2. Docker Commands
 
-# Build and start all services
+### Build and start all services
 docker-compose up --build
 
-# Or run in detached mode
+### Run in detached mode
 docker-compose up -d --build
 
-# Stop all services
+### Stop all services
 docker-compose down
 
-# Stop and remove volumes (clears database)
+### Stop and remove volumes (clears database)
 docker-compose down -v
 
-# View logs
+### View logs
 docker-compose logs -f
 
-# View logs for specific service
+### View logs for specific service
 docker-compose logs -f backend
 
 # Restart a service
