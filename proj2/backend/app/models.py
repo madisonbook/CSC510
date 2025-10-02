@@ -1,6 +1,121 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr, validator
+from typing import Optional, List
 from bson import ObjectId
+from datetime import datetime
+from enum import Enum
+
+
+
+class UserRole(str, Enum):
+    USER = "user"
+    RESTAURANT = "restaurant"
+    ADMIN = "admin"
+
+class AccountStatus(str, Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    REJECTED = "rejected"
+
+# User Models
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    phone: Optional[str] = None
+    address: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
+        if not any(c in '!@#$%^&*()_+-=[]{}|;:,.<>?' for c in v):
+            raise ValueError('Password must contain at least one special character')
+        return v
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    phone: Optional[str]
+    address: str
+    role: UserRole
+    status: AccountStatus
+    preferences: dict = {}
+    allergens: List[str] = []
+    created_at: datetime
+    verified: bool = False
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+# Restaurant Models
+class RestaurantCreate(BaseModel):
+    business_email: EmailStr
+    password: str
+    restaurant_name: str
+    business_registration_number: str
+    address: str
+    phone: str
+    cuisine_categories: List[str]
+    operating_hours: dict
+    contact_person_name: str
+    contact_person_role: str
+    
+    @validator('password')
+    def validate_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters')
+        if not any(c.isupper() for c in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('Password must contain at least one number')
+        return v
+
+class RestaurantResponse(BaseModel):
+    id: str
+    business_email: str
+    restaurant_name: str
+    business_registration_number: str
+    address: str
+    phone: str
+    cuisine_categories: List[str]
+    operating_hours: dict
+    contact_person_name: str
+    contact_person_role: str
+    role: UserRole
+    status: AccountStatus
+    created_at: datetime
+    verified: bool = False
+    documents_submitted: bool = False
+
+class VerificationToken(BaseModel):
+    email: str
+    token: str
+    expires_at: datetime
+    token_type: str  # "email_verification" or "password_reset"
+
+# Preference Models
+class UserPreferences(BaseModel):
+    dietary_restrictions: List[str] = []
+    favorite_cuisines: List[str] = []
+    price_range: Optional[str] = None
+    distance_preference: Optional[int] = None  # in miles
+
+class AllergenInfo(BaseModel):
+    allergens: List[str]
+
+
+
 
 class PyObjectId(ObjectId):
     @classmethod
