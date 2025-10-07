@@ -1,4 +1,5 @@
 import secrets
+from pydantic import SecretStr
 import hashlib
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
@@ -9,12 +10,21 @@ import os
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def hash_password(password: str) -> str:
-    """Hash a password using bcrypt"""
+def _unwrap_secret(password):
+    # Works whether it's a Pydantic SecretStr or a normal string
+    if isinstance(password, SecretStr):
+        return password.get_secret_value()
+    return password
+
+def hash_password(password):
+    password = _unwrap_secret(password)
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
+
+    print("verify_password types:", type(plain_password), type(hashed_password))
+    print("hashed_password repr:", repr(hashed_password))
     return pwd_context.verify(plain_password, hashed_password)
 
 def generate_verification_token() -> str:

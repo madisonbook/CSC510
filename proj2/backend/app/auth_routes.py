@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status
 from datetime import datetime, timedelta
 from bson import ObjectId
 
@@ -15,15 +15,14 @@ from .utils import (
 )
 
 router = APIRouter()
-db = get_database()
 
 # User Registration
 @router.post("/api/auth/register/user", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def register_user(user: UserCreate):
     """Register a new user account"""
-    
+    db = get_database()
     # Check if user already exists
-    existing_user = db.users.find_one({"email": user.email})
+    existing_user = await db.users.find_one({"email": user.email})
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -50,7 +49,7 @@ async def register_user(user: UserCreate):
     }
     
     # Insert user
-    result = db.users.insert_one(user_doc)
+    result = await db.users.insert_one(user_doc)
     
     # Generate verification token
     token = generate_verification_token()
@@ -61,7 +60,7 @@ async def register_user(user: UserCreate):
         "expires_at": datetime.utcnow() + timedelta(hours=24),
         "created_at": datetime.utcnow()
     }
-    db.verification_tokens.insert_one(token_doc)
+    await db.verification_tokens.insert_one(token_doc)
     
     # Send verification email
     send_verification_email(user.email, token, "user")
@@ -77,8 +76,9 @@ async def register_user(user: UserCreate):
 async def register_restaurant(restaurant: RestaurantCreate):
     """Register a new restaurant account"""
     
+    db = get_database()
     # Check if restaurant already exists
-    existing_restaurant = db.restaurants.find_one({"business_email": restaurant.business_email})
+    existing_restaurant = await db.restaurants.find_one({"business_email": restaurant.business_email})
     if existing_restaurant:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -86,7 +86,7 @@ async def register_restaurant(restaurant: RestaurantCreate):
         )
     
     # Check for duplicate restaurant name and address
-    duplicate_restaurant = db.restaurants.find_one({
+    duplicate_restaurant = await db.restaurants.find_one({
         "restaurant_name": restaurant.restaurant_name,
         "address": restaurant.address
     })
@@ -121,7 +121,7 @@ async def register_restaurant(restaurant: RestaurantCreate):
     }
     
     # Insert restaurant
-    result = db.restaurants.insert_one(restaurant_doc)
+    result = await db.restaurants.insert_one(restaurant_doc)
     
     # Generate verification token
     token = generate_verification_token()
@@ -132,7 +132,7 @@ async def register_restaurant(restaurant: RestaurantCreate):
         "expires_at": datetime.utcnow() + timedelta(hours=24),
         "created_at": datetime.utcnow()
     }
-    db.verification_tokens.insert_one(token_doc)
+    await db.verification_tokens.insert_one(token_doc)
     
     # Send verification email
     send_verification_email(restaurant.business_email, token, "restaurant")
@@ -147,9 +147,9 @@ async def register_restaurant(restaurant: RestaurantCreate):
 @router.post("/api/auth/verify", response_model=dict)
 async def verify_email(email: str, token: str, account_type: str = "user"):
     """Verify user or restaurant email"""
-    
+    db = get_database()
     # Find verification token
-    token_doc = db.verification_tokens.find_one({
+    token_doc = await db.verification_tokens.find_one({
         "email": email,
         "token": token,
         "token_type": "email_verification"
@@ -172,7 +172,7 @@ async def verify_email(email: str, token: str, account_type: str = "user"):
     collection = db.users if account_type == "user" else db.restaurants
     email_field = "email" if account_type == "user" else "business_email"
     
-    result = collection.update_one(
+    result = await collection.update_one(
         {email_field: email},
         {
             "$set": {
@@ -190,7 +190,7 @@ async def verify_email(email: str, token: str, account_type: str = "user"):
         )
     
     # Delete used token
-    db.verification_tokens.delete_one({"_id": token_doc["_id"]})
+    await db.verification_tokens.delete_one({"_id": token_doc["_id"]})
     
     message = "Email verified successfully! Your account is now active." if account_type == "user" else \
               "Email verified successfully! Your account is pending admin review. Please submit required documents."
@@ -201,7 +201,7 @@ async def verify_email(email: str, token: str, account_type: str = "user"):
 @router.post("/api/auth/resend-verification", response_model=dict)
 async def resend_verification(email: str, account_type: str = "user"):
     """Resend verification email"""
-    
+    db = get_database()
     # Find user/restaurant
     collection = db.users if account_type == "user" else db.restaurants
     email_field = "email" if account_type == "user" else "business_email"
@@ -220,7 +220,7 @@ async def resend_verification(email: str, account_type: str = "user"):
         )
     
     # Delete old tokens
-    db.verification_tokens.delete_many({
+    await db.verification_tokens.delete_many({
         "email": email,
         "token_type": "email_verification"
     })
@@ -234,7 +234,7 @@ async def resend_verification(email: str, account_type: str = "user"):
         "expires_at": datetime.utcnow() + timedelta(hours=24),
         "created_at": datetime.utcnow()
     }
-    db.verification_tokens.insert_one(token_doc)
+    await db.verification_tokens.insert_one(token_doc)
     
     # Send verification email
     send_verification_email(email, token, account_type)
@@ -245,9 +245,9 @@ async def resend_verification(email: str, account_type: str = "user"):
 @router.post("/api/auth/login", response_model=dict)
 async def login(credentials: UserLogin):
     """Login for both users and restaurants"""
-    
+    db = get_database()
     # Check in users collection
-    user = db.users.find_one({"email": credentials.email})
+    user = await db.users.find_one({"email": credentials.email})
     if user:
         if not verify_password(credentials.password, user["password"]):
             raise HTTPException(
@@ -270,7 +270,7 @@ async def login(credentials: UserLogin):
         }
     
     # Check in restaurants collection
-    restaurant = db.restaurants.find_one({"business_email": credentials.email})
+    restaurant = await db.restaurants.find_one({"business_email": credentials.email})
     if restaurant:
         if not verify_password(credentials.password, restaurant["password"]):
             raise HTTPException(
