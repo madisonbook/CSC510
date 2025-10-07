@@ -71,6 +71,32 @@ async def register_user(user: UserCreate):
         "email": user.email
     }
 
+@router.get("/api/auth/verify", response_model=dict)
+async def verify_user(email: str, token: str):
+    """Verify a user's email address"""
+    db = get_database()
+    
+    token_doc = await db.verification_tokens.find_one({
+        "email": email,
+        "token": token,
+        "token_type": "email_verification"
+    })
+    
+    if not token_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token.")
+    
+    if datetime.utcnow() > token_doc["expires_at"]:
+        raise HTTPException(status_code=400, detail="Verification token has expired.")
+    
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {"verified": True, "status": AccountStatus.ACTIVE}}
+    )
+    
+    await db.verification_tokens.delete_one({"_id": token_doc["_id"]})
+    
+    return {"message": "Email verified successfully!"}
+
 # Restaurant Registration
 @router.post("/api/auth/register/restaurant", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def register_restaurant(restaurant: RestaurantCreate):
@@ -296,3 +322,14 @@ async def login(credentials: UserLogin):
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Incorrect email or password"
     )
+
+#End point just for testing
+@router.get("/api/debug/users")
+async def list_users():
+    db = get_database()
+    users = await db.users.find().to_list(100)  # limit to 100 users
+    
+    for user in users:
+        user["_id"] = str(user["_id"])
+        
+    return users

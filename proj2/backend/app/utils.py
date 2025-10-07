@@ -36,6 +36,17 @@ def create_verification_token_hash(email: str, token: str) -> str:
     return hashlib.sha256(f"{email}{token}".encode()).hexdigest()
 
 def send_verification_email(email: str, token: str, user_type: str = "user"):
+    """Send (or simulate sending) verification email"""
+    BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+    verification_link = f"{BASE_URL}/api/auth/verify?email={email}&token={token}&type={user_type}"
+    
+    # For testing, just print the link
+    print(f"✅ Verification link for {email}: {verification_link}")
+    return True
+
+#Uncomment the below email after doing testing on email verification and login
+'''
+def send_verification_email(email: str, token: str, user_type: str = "user"):
     """Send verification email to user"""
     
     # Configure these with your email service credentials
@@ -97,3 +108,4 @@ def send_verification_email(email: str, token: str, user_type: str = "user"):
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+'''
