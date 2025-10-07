@@ -2,8 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .database import connect_to_mongo, close_mongo_connection
-from .routes import items
-from routes.auth_routes import router as auth_router
+from .auth_routes import router as auth_router
+from .database import get_database
+from pymongo import ASCENDING
 
 
 
@@ -22,6 +23,21 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+#@app.on_event("startup")
+#
+#    """Initialize database indexes on application startup"""
+#    db = get_database()
+    
+#    try:
+        # Create indexes (will skip if already exist)
+#        db.users.create_index([("email", ASCENDING)], unique=True)
+#        db.restaurants.create_index([("business_email", ASCENDING)], unique=True)
+#        db.verification_tokens.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)
+#       db.verification_tokens.create_index([("email", ASCENDING)])
+#        print("✅ Database indexes verified/created")
+#    except Exception as e:
+#        print(f"⚠️ Index creation note: {e}")
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -31,8 +47,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(items.router, prefix="/api")
+
+# Include routersv
+app.include_router(auth_router, tags =["Authentication"])
 
 @app.get("/")
 async def root():

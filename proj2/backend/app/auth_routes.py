@@ -1,16 +1,15 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime, timedelta
 from bson import ObjectId
-import sys
-sys.path.append('..')
 
-from models import (
+
+from .models import (
     UserCreate, UserResponse, UserLogin, 
     RestaurantCreate, RestaurantResponse,
     UserRole, AccountStatus, VerificationToken
 )
-from database import get_database
-from utils import (
+from .database import get_database
+from .utils import (
     hash_password, verify_password, 
     generate_verification_token, send_verification_email
 )
