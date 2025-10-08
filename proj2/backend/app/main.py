@@ -71,8 +71,8 @@ async def shutdown_event():
 
 # Include routersv
 app.include_router(auth_router, tags =["Authentication"])
-app.include_router(user_router, tags =["User"])
-app.include_router(meal_router, tags =["Meal"])
+app.include_router(user_router)
+app.include_router(meal_router)
 
 @app.get("/")
 async def root():
