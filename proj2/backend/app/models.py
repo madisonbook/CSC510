@@ -8,7 +8,6 @@ from enum import Enum
 
 class UserRole(str, Enum):
     USER = "user"
-    RESTAURANT = "restaurant"
     ADMIN = "admin"
 
 class AccountStatus(str, Enum):
@@ -56,47 +55,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# Restaurant Models
-class RestaurantCreate(BaseModel):
-    business_email: EmailStr
-    password: str
-    restaurant_name: str
-    business_registration_number: str
-    address: str
-    phone: str
-    cuisine_categories: List[str]
-    operating_hours: dict
-    contact_person_name: str
-    contact_person_role: str
-    
-    @validator('password')
-    def validate_password(cls, v):
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters')
-        if not any(c.isupper() for c in v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not any(c.islower() for c in v):
-            raise ValueError('Password must contain at least one lowercase letter')
-        if not any(c.isdigit() for c in v):
-            raise ValueError('Password must contain at least one number')
-        return v
-
-class RestaurantResponse(BaseModel):
-    id: str
-    business_email: str
-    restaurant_name: str
-    business_registration_number: str
-    address: str
-    phone: str
-    cuisine_categories: List[str]
-    operating_hours: dict
-    contact_person_name: str
-    contact_person_role: str
-    role: UserRole
-    status: AccountStatus
-    created_at: datetime
-    verified: bool = False
-    documents_submitted: bool = False
 
 class VerificationToken(BaseModel):
     email: str
