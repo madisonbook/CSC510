@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .database import connect_to_mongo, close_mongo_connection, get_database
 from .auth_routes import router as auth_router
+from .user_routes import router as user_router
+from .meal_routes import router as meal_router
 from pymongo import ASCENDING
 
 
@@ -16,7 +18,7 @@ async def lifespan(app: FastAPI):
     await close_mongo_connection()
 
 app = FastAPI(
-    title="FastAPI MongoDB Application",
+    title="Taste Buddies API",
     description="A full-stack application with FastAPI, MongoDB, and React",
     version="1.0.0",
     lifespan=lifespan
@@ -31,11 +33,24 @@ async def startup_event():
     
     if db is not None:
         try:
-            # Create indexes (will skip if already exist)
+            # User indexes
             await db.users.create_index([("email", ASCENDING)], unique=True)
-            await db.restaurants.create_index([("business_email", ASCENDING)], unique=True)
+            
+            # Meal indexes
+            await db.meals.create_index([("seller_id", ASCENDING)])
+            await db.meals.create_index([("status", ASCENDING)])
+            await db.meals.create_index([("cuisine_type", ASCENDING)])
+            await db.meals.create_index([("created_at", ASCENDING)])
+            
+            # Verification token indexes
             await db.verification_tokens.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)
             await db.verification_tokens.create_index([("email", ASCENDING)])
+            
+            # Review indexes
+            await db.reviews.create_index([("meal_id", ASCENDING)])
+            await db.reviews.create_index([("reviewer_id", ASCENDING)])
+            await db.reviews.create_index([("seller_id", ASCENDING)])
+            
             print("✅ Database indexes verified/created")
         except Exception as e:
             print(f"⚠️ Index creation note: {e}")
@@ -56,10 +71,13 @@ async def shutdown_event():
 
 # Include routersv
 app.include_router(auth_router, tags =["Authentication"])
+app.include_router(user_router, tags =["User"])
+app.include_router(meal_router, tags =["Meal"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to FastAPI with MongoDB!"}
+    return {"message": "Welcome to Taste Buddiez API",
+        "tagline": "Connecting neighbors through homemade meals"}
 
 @app.get("/health")
 async def health_check():
