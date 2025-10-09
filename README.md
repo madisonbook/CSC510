@@ -12,6 +12,9 @@ docker-compose up --build
 ### Run in detached mode
 docker-compose up -d --build
 
+### Run backend tests
+docker-compose up --build backend-tests
+
 ### Stop all services
 docker-compose down
 
