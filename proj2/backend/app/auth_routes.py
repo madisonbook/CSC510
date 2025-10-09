@@ -1,11 +1,13 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends, Header
 from datetime import datetime, timedelta
 from bson import ObjectId
+from typing import Optional
 
 
 from .models import (
     UserCreate, UserResponse, UserLogin, 
-    UserRole, AccountStatus, VerificationToken
+    UserRole, AccountStatus, VerificationToken,
+    UserStats, UserPreferences, SocialMediaLinks, DietaryPreferences
 )
 from .database import get_database
 from .utils import (
@@ -14,6 +16,7 @@ from .utils import (
 )
 
 router = APIRouter()
+
 
 # User Registration
 @router.post("/api/auth/register/user", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -37,11 +40,14 @@ async def register_user(user: UserCreate):
         "password": hashed_password,
         "full_name": user.full_name,
         "phone": user.phone,
-        "address": user.address,
+        "location": user.location.dict(),
+        "bio": user.bio,
+        "profile_picture": user.profile_picture,
+        "dietary_preferences": DietaryPreferences().dict(),
+        "social_media": SocialMediaLinks().dict(),
         "role": UserRole.USER,
         "status": AccountStatus.PENDING,
-        "preferences": {},
-        "allergens": [],
+        "stats": UserStats().dict(),
         "verified": False,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
