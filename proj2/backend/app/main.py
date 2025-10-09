@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer
 from contextlib import asynccontextmanager
 from .database import connect_to_mongo, close_mongo_connection, get_database
 from .auth_routes import router as auth_router
@@ -58,7 +59,7 @@ async def startup_event():
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

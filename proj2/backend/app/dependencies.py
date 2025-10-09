@@ -1,15 +1,18 @@
-from fastapi import HTTPException, status, Header
+from fastapi import HTTPException, status, Header, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from .database import get_database
 
-async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
+security = HTTPBearer()
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """
     Dependency to get the current authenticated user from token.
     For now, this is a simple implementation. You'll want to add JWT later.
     """
     db = get_database()
     
-    if not authorization:
+    if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated"
@@ -18,7 +21,7 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     # Simple token validation (replace with JWT in production)
     try:
         # Extract token (assuming "Bearer <email>" format temporarily)
-        token = authorization.replace("Bearer ", "")
+        token = credentials.credentials
         user = await db.users.find_one({"email": token})
         
         if not user:
@@ -34,6 +37,8 @@ async def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
             )
         
         return user
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
