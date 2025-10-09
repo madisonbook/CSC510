@@ -3,12 +3,12 @@ from datetime import datetime
 from bson import ObjectId
 from typing import List
 
-from .models import (
+from ..models import (
     UserUpdate, UserResponse, DietaryPreferences, 
     SocialMediaLinks, AccountStatus, UserStats
 )
-from .database import get_database
-from .dependencies import get_current_user  # For authentication
+from app.database import get_database
+from app.dependencies import get_current_user  # For authentication
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 

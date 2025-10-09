@@ -3,12 +3,12 @@ from datetime import datetime
 from bson import ObjectId
 from typing import List, Optional
 
-from .models import (
+from ..models import (
     MealCreate, MealUpdate, MealResponse, MealSearchFilters,
     MealStatus
 )
-from .database import get_database
-from .dependencies import get_current_user
+from app.database import get_database
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/meals", tags=["Meals"])
 

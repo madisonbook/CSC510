@@ -4,13 +4,13 @@ from bson import ObjectId
 from typing import Optional
 
 
-from .models import (
+from ..models import (
     UserCreate, UserResponse, UserLogin, 
     UserRole, AccountStatus, VerificationToken,
     UserStats, UserPreferences, SocialMediaLinks, DietaryPreferences
 )
-from .database import get_database
-from .utils import (
+from app.database import get_database
+from ..utils import (
     hash_password, verify_password, 
     generate_verification_token, send_verification_email
 )
