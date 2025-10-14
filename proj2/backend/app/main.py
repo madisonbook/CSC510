@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from contextlib import asynccontextmanager
 from .database import connect_to_mongo, close_mongo_connection, get_database
-from .auth_routes import router as auth_router
-from .user_routes import router as user_router
-from .meal_routes import router as meal_router
+from .routes.auth_routes import router as auth_router
+from .routes.user_routes import router as user_router
+from .routes.meal_routes import router as meal_router
 from pymongo import ASCENDING
 
 
