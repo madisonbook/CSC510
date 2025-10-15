@@ -1,18 +1,20 @@
 //import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import './App.css'
 import LandingPage from './components/LandingPage';
+import Dashboard from './components/Dashboard';
 import { Button } from "./components/ui/button"
 
 function App() {
 
   return (
-    <>
-      <LandingPage />
-    </>
-
-    
-  )
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App
