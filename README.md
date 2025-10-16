@@ -1,5 +1,7 @@
 # Group 26
 
+[![Syntax Check](https://github.com/madisonbook/CSC510/actions/workflows/syntax-check.yml/badge.svg?branch=alicebadges)](https://github.com/madisonbook/CSC510/actions/workflows/syntax-check.yml)
+
 # 1. Install Prerequisites
 - Docker Desktop
 - Docker Compose
