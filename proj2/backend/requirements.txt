@@ -12,3 +12,7 @@ python-jose[cryptography]==3.3.0
 pytest
 pytest-asyncio
 httpx
+pytest-cov
+coverage
+pre-commit
+coverage-badge
