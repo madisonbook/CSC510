@@ -1,9 +1,8 @@
-from pydantic import BaseModel, Field, EmailStr, validator, HttpUrl
+from pydantic import BaseModel, Field, EmailStr, validator
 from typing import Optional, List
 from bson import ObjectId
 from datetime import datetime
 from enum import Enum
-
 
 
 class UserRole(str, Enum):
@@ -142,10 +141,8 @@ class UserPreferences(BaseModel):
     price_range: Optional[str] = None
     distance_preference: Optional[int] = None  # in miles
 
-class AllergenInfo(BaseModel):
+class UserAllergenInfo(BaseModel):
     allergens: List[str]
-
-
 
 
 class PyObjectId(ObjectId):

@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
 from bson import ObjectId
-from typing import List
 
 from ..models import (
-    UserUpdate, UserResponse, DietaryPreferences, 
-    SocialMediaLinks, AccountStatus, UserStats
+    UserUpdate, UserResponse, DietaryPreferences,
+    SocialMediaLinks, UserStats
 )
 from app.database import get_database
 from app.dependencies import get_current_user  # For authentication

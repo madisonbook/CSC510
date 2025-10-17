@@ -1,0 +1,29 @@
+name: Backend Tests and Coverage
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Docker image
+      run: docker build -t backend-test -f ./proj2/backend/Dockerfile ./proj2/backend
+    
+    - name: Run flake8
+      run: docker run --rm backend-test flake8 .
+      continue-on-error: true
+    
+    - name: Run tests with coverage
+      run: docker run --rm -v $PWD:/app -w /app/proj2/backend backend-test pytest app/tests --cov=app --cov-report=xml --cov-report=term --cov-config=.coveragerc
+      continue-on-error: true
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./proj2/backend/coverage.xml
+        flags: unittests
+        name: backend-coverage

@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends
 from datetime import datetime
 from bson import ObjectId
 from typing import List, Optional
 
 from ..models import (
-    MealCreate, MealUpdate, MealResponse, MealSearchFilters,
+    MealCreate, MealUpdate, MealResponse,
     MealStatus
 )
 from app.database import get_database

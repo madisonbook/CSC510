@@ -1,17 +1,15 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Header
+from fastapi import APIRouter, HTTPException, status
 from datetime import datetime, timedelta
-from bson import ObjectId
-from typing import Optional
 
 
 from ..models import (
-    UserCreate, UserResponse, UserLogin, 
-    UserRole, AccountStatus, VerificationToken,
-    UserStats, UserPreferences, SocialMediaLinks, DietaryPreferences
+    UserCreate, UserLogin,
+    UserRole, AccountStatus,
+    UserStats, SocialMediaLinks, DietaryPreferences
 )
 from app.database import get_database
 from ..utils import (
-    hash_password, verify_password, 
+    hash_password, verify_password,
     generate_verification_token, send_verification_email
 )
 
@@ -71,7 +69,8 @@ async def register_user(user: UserCreate):
     send_verification_email(user.email, token, "user")
     
     return {
-        "message": "User account created successfully. Please check your email to verify your account.",
+        "message": "User account created successfully."
+        " Please check your email to verify your account.",
         "user_id": str(result.inserted_id),
         "email": user.email
     }
@@ -129,7 +128,7 @@ async def verify_email(email: str, token: str, account_type: str = "user"):
         )
     
     # Update user/restaurant as verified
-    collection = db.users 
+    collection = db.users
     email_field = "email"
     
     result = await collection.update_one(
@@ -161,7 +160,7 @@ async def resend_verification(email: str, account_type: str = "user"):
     """Resend verification email"""
     db = get_database()
     # Find user
-    collection = db.users 
+    collection = db.users
     email_field = "email"
     
     account = collection.find_one({email_field: email})
@@ -228,7 +227,7 @@ async def login(credentials: UserLogin):
         }
     
 
-#End point just for testing
+# End point just for testing
 @router.get("/api/debug/users")
 async def list_users():
     db = get_database()
