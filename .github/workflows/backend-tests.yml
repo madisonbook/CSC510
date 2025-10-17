@@ -23,6 +23,7 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
+        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./proj2/backend/coverage.xml
         flags: unittests
         name: backend-coverage
