@@ -17,7 +17,7 @@ jobs:
       continue-on-error: true
     
     - name: Run tests with coverage
-      run: docker run --rm -v $PWD:/app backend-test pytest app/tests --cov=app --cov-report=xml --cov-report=term --cov-config=app/.coveragerc
+      run: docker run --rm -v $PWD:/app backend-test pytest app/tests --cov=app --cov-report=xml --cov-report=term --cov-config=.coveragerc
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
