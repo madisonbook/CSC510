@@ -1,4 +1,5 @@
-import { useState } from 'react';
+/* eslint-disable no-unused-vars */
+import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -8,7 +9,60 @@ import { PreferencesTab } from './PreferencesTab';
 import RecommendationsTab from './RecommendationsTab';
 import MyMealsTab from './MyMealsTab';
 
-export default function Dashboard({ userEmail, onLogout }) {
+
+export default function Dashboard({ userId, onLogout }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(null);
+  const [myMeals, setMyMeals] = useState([]);
+  const backendURL = "http://localhost:8000";
+
+  // fetch current user info
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${backendURL}/api/users/me`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json"},
+          body: JSON.stringify({ id:userId })
+        });
+        if (!res.ok) throw new Error("Failed to fetch user data");
+        const data = await res.json();
+        setUser(data);
+
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (userId) fetchUser();
+  }, [userId]);
+
+  // fetch user's meals
+  useEffect(() => {
+    const fetchMeals = async () => {
+      try {
+        const res = await fetch(`${backendURL}/api/meals/my/listings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seller_id: userId })
+        });
+        if (!res.ok) throw new Error("Failed to fetch meals");
+        const data = await res.json();
+        setMyMeals(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) fetchMeals();
+  }, [userId]);
+
+
+  
   const [preferences, setPreferences] = useState({
     cuisines: [], // Empty by default - show all cuisines
     allergens: [],
@@ -21,7 +75,6 @@ export default function Dashboard({ userEmail, onLogout }) {
   });
 
   const [userRatings, setUserRatings] = useState({});
-  const [myMeals, setMyMeals] = useState([]);
 
   const handleRateRestaurant = (restaurantId, rating, review) => {
     setUserRatings(prev => ({
@@ -34,7 +87,7 @@ export default function Dashboard({ userEmail, onLogout }) {
     const newMeal = {
       ...meal,
       id: Date.now().toString(),
-      cookName: userEmail.split('@')[0],
+      cookName: userId.split('@')[0],
       rating: 0,
       postedAt: new Date().toISOString()
     };
@@ -53,6 +106,8 @@ export default function Dashboard({ userEmail, onLogout }) {
     const sum = ratings.reduce((acc, curr) => acc + curr.rating, 0);
     return sum / ratings.length;
   };
+
+  if (loading) return <p>Loading user data...</p>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/50 to-accent/30">
@@ -89,7 +144,7 @@ export default function Dashboard({ userEmail, onLogout }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block">
-                  <p className="text-sm">{userEmail}</p>
+                  <p className="text-sm">{userId}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -109,7 +164,7 @@ export default function Dashboard({ userEmail, onLogout }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4 tracking-tight font-serif font-semibold text-primary">
-            Welcome back!
+            Welcome back, {user?.full_name ? user.full_name.split(' ')[0] : "User"}!!
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground font-sans">
             Ready to discover delicious homemade meals or share your own creations?

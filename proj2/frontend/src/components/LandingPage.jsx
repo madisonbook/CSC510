@@ -1,9 +1,12 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 //import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { useNavigate } from "react-router-dom";
+
 
 function LandingPage({ onAuthSuccess }) {
 
@@ -12,20 +15,81 @@ function LandingPage({ onAuthSuccess }) {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [bio, setBio] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [profilePicture, setProfilePicture] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const backendURL = "http://localhost:8000";
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     // validate credentials
-    if (loginEmail && loginPassword) {
-      onAuthSuccess(loginEmail);
+    if (!loginEmail || !loginPassword) return alert("Enter email and password");
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${backendURL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        // login successful
+        navigate("/dashboard");;
+      } else {
+        alert(data.detail || data.message || "Login failed. Please try again.");
+      }
+    }  catch (err) {
+      console.error("Login error:", err);
+      alert("Error connecting to backend");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     // create user account
-    if (signupEmail && signupPassword && signupName) {
-      onAuthSuccess(signupEmail);
+    if (!signupEmail || !signupPassword || !signupName) return alert("Fill in all fields");
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${backendURL}/api/auth/register/user`, {
+        method: "POST",
+        headers:{ "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: signupEmail,
+          password: signupPassword,
+          full_name: signupName,
+          phone: "",
+          location: { address: "", city: "", state: "", zip_code: "", latitude: 0, longitude: 0 },
+          bio: "",
+          profile_picture: ""
+        })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message || "Account created successfully. Please verify your email.");
+        navigate("/dashboard");
+      } else {
+        alert(data.detail || data.message || "Signup failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      alert("Error connecting to backend");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,23 +175,14 @@ function LandingPage({ onAuthSuccess }) {
                   <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
                   <TabsTrigger value="login" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
                 </TabsList>
-                
+
+                {/* Signup Form */}                
                 <TabsContent value="signup" className="space-y-5 mt-0">
                   <form onSubmit={handleSignup} className="space-y-5">
                     <div className="space-y-2">
                       <Input
-                        type="text"
-                        placeholder="Full Name"
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
-                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Input
                         type="email"
-                        placeholder="Email Address"
+                        placeholder="Email"
                         value={signupEmail}
                         onChange={(e) => setSignupEmail(e.target.value)}
                         className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
@@ -144,6 +199,61 @@ function LandingPage({ onAuthSuccess }) {
                         required
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Input
+                        type="text"
+                        placeholder="Full Name"
+                        value={signupName}
+                        onChange={(e) => setSignupName(e.target.value)}
+                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Input
+                        type="tel"
+                        placeholder="Phone Number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
+                        required
+                      />
+                    </div>
+                    
+
+                    {/* Location Section */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        type="text"
+                        placeholder="Address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="City"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="State"
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Zip Code"
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
+                        className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"
+                      />
+                    </div>
+
+                    
                     <Button type="submit" className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-sans font-medium text-base shadow-lg transition-all duration-200">
                       Create Account →
                     </Button>
@@ -155,7 +265,7 @@ function LandingPage({ onAuthSuccess }) {
                     <div className="space-y-2">
                       <Input
                         type="email"
-                        placeholder="Email Address"
+                        placeholder="Email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
                         className="h-14 bg-white/70 border border-primary/20 shadow-sm font-sans placeholder:text-muted-foreground/70"

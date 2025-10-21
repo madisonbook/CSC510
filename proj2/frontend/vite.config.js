@@ -12,4 +12,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    host: true, // or '0.0.0.0' - exposes to Docker network
+    port: 5173,
+    strictPort: true,
+    watch: {
+      usePolling: true, // Important for file changes to work in Docker
+    },
+  },
 })
