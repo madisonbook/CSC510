@@ -8,58 +8,98 @@ import { LogOut, Settings, User, Star } from 'lucide-react';
 import { PreferencesTab } from './PreferencesTab';
 import RecommendationsTab from './RecommendationsTab';
 import MyMealsTab from './MyMealsTab';
+import { useNavigate } from 'react-router-dom';
 
 
-export default function Dashboard({ userId, onLogout }) {
+export default function Dashboard({ onLogout }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [myMeals, setMyMeals] = useState([]);
+  const [error, setError] = useState(null);
   const backendURL = "http://localhost:8000";
+  const navigate = useNavigate();
+  
+  const userId = localStorage.getItem("userId");
+  const userEmail = localStorage.getItem("email");
+  const fullName = localStorage.getItem("fullName");
+
+  // check if current user is logged in
+  useEffect(() => {
+    if (!userId) {
+      navigate('/');
+      return;
+    }
+  }, [userId, navigate]);
 
   // fetch current user info
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${backendURL}/api/users/me`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json"},
-          body: JSON.stringify({ id:userId })
-        });
-        if (!res.ok) throw new Error("Failed to fetch user data");
-        const data = await res.json();
-        setUser(data);
+    if(!userId) return;
 
+    const fetchUser = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch(`${backendURL}/api/users/${userId}`);
+        if (!res.ok) {
+          if (res.status == 404) {
+            throw new Error("User not found");
+          } throw new Error("Failed to fetch user data");
+        }
+
+        const data = await res.json();
+        console.log("Fetched user data: ", data);
+        setUser(data);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching user: ", err);
+        setError(err.message);
+
+        // if user not found, redirect to login
+        if (err.message == "User not found") {
+          localStorage.clear();
+          navigate('/');
+        }
       } finally {
         setLoading(false);
       }
-    };
-    
-    if (userId) fetchUser();
-  }, [userId]);
+  }; 
+  fetchUser();
+}, [userId, navigate]);
+
 
   // fetch user's meals
   useEffect(() => {
+    if (!userId) return;
+
+    // using email as bearer token for temp auth
     const fetchMeals = async () => {
       try {
         const res = await fetch(`${backendURL}/api/meals/my/listings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ seller_id: userId })
+          method: "GET",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${userEmail}` },
         });
-        if (!res.ok) throw new Error("Failed to fetch meals");
+
+        if (!res.ok) {
+          if (res.status === 404) {
+            console.log("No meals found for this user");
+            setMyMeals([])
+            return;
+          }
+          throw new Error("Failed to fetch meals");
+        }
         const data = await res.json();
+        console.log("Fetched meals: ", data);
         setMyMeals(data);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching meals: ", err);
+        setMyMeals([]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (userId) fetchMeals();
-  }, [userId]);
+    fetchMeals();
+  }, [userId, userEmail]);
 
 
   
@@ -87,7 +127,7 @@ export default function Dashboard({ userId, onLogout }) {
     const newMeal = {
       ...meal,
       id: Date.now().toString(),
-      cookName: userId.split('@')[0],
+      cookName: fullName || 'Unknown',
       rating: 0,
       postedAt: new Date().toISOString()
     };
@@ -105,6 +145,12 @@ export default function Dashboard({ userId, onLogout }) {
     if (ratings.length === 0) return 0;
     const sum = ratings.reduce((acc, curr) => acc + curr.rating, 0);
     return sum / ratings.length;
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    if (onLogout) onLogout();
+    navigate('/');
   };
 
   if (loading) return <p>Loading user data...</p>;

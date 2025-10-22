@@ -45,7 +45,31 @@ function LandingPage({ onAuthSuccess }) {
 
       if (response.ok) {
         // login successful
-        navigate("/dashboard");;
+        const { user_id, full_name } = data;
+        localStorage.setItem("userId", user_id);
+        localStorage.setItem("fullName", full_name);
+        localStorage.setItem("email",data.email);
+        navigate("/dashboard");
+      } else if (response.status == 403 && data.detail?.includes("verify your email")) {
+        // handle unverified account
+        const resend = window.confirm(
+          "Your email is not verified. Would you like to resend the verification email?"
+        );
+
+        if (resend){
+          const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: loginEmail }),
+          });
+
+          const resendData = await resendResponse.json();
+          if (resendResponse.ok) {
+            alert(resendData.message || "Verification email sent successfully. Please check your inbox.");
+          } else {
+            alert(resendData.detail || "Failed to send verification email.");
+          }
+        }
       } else {
         alert(data.detail || data.message || "Login failed. Please try again.");
       }
@@ -80,6 +104,9 @@ function LandingPage({ onAuthSuccess }) {
       const data = await response.json();
 
       if (response.ok) {
+        localStorage.setItem("userId", data.user_id);
+        localStorage.setItem("email", data.email);
+        localStorage.setItem("fullName", signupName);
         alert(data.message || "Account created successfully. Please verify your email.");
         navigate("/dashboard");
       } else {

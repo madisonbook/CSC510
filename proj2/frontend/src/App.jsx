@@ -4,6 +4,7 @@ import './App.css'
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import { Button } from "./components/ui/button"
+import EmailVerification from './components/EmailVerification';
 
 function App() {
 
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/verify" element={<EmailVerification />} />
       </Routes>
     </Router>
   );
