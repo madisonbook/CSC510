@@ -40,14 +40,4 @@ Ensure you have the following installed
 2. terminal: 'docker-compose up --build'
 3. navigate to [http://localhost:5173/](http://localhost:5173/) in your browser
 
-## 3. Stopping the Application
-1. terminal: 'Ctrl+C' OR 'docker-compose down'
-
-## 4. Build and Run Backend Tests
-1. terminal: 'docker-compose up --build backend-tests'
-
-## 5. Other Docker Commands
-1. Run in detached mode: 'docker-compose up -d --build'
-2. Stop application and remove volumes: 'docker-compose down -v'
-3. View logs: 'docker-compose logs -f'
-4. Restart a service: 'docker-compose restart {ie. backend}'
+## 3. Stopping the A
