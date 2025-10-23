@@ -20,8 +20,7 @@
 11. [Testing Guide](#testing-guide)
 12. [Deployment to Production](#deployment-to-production)
 13. [API Versioning](#api-versioning)
-14. [Contributing Guidlines](#contributing-guidelines)
-15. [License and Support](#license-and-support)
+14. [ Support](#support)
 
 
 ---
@@ -951,10 +950,7 @@ app.include_router(auth_router_v2, prefix="/api/v2", tags=["Auth v2"])
 
 ---
 
-## License and Support
-
-### License
-This project is part of CSC510 coursework. Please refer to the repository for licensing information.
+## Support
 
 ### Support Channels
 - **GitHub Issues:** https://github.com/madisonbook/CSC510/issues
