@@ -1,9 +1,16 @@
-# Group 26
+# TASTE BUDDIEZ (Group 26)
 
 [![Syntax Check](https://github.com/madisonbook/CSC510/actions/workflows/syntax-check.yml/badge.svg?branch=alicebadges)](https://github.com/madisonbook/CSC510/actions/workflows/syntax-check.yml)
 
 [![Code Coverage](https://codecov.io/gh/madisonbook/CSC510/branch/alicebadges/graph/badge.svg)](https://codecov.io/gh/madisonbook/CSC510)
 
+# Our Story
+
+* **Tired of eating the same meal for a week straight?**
+* **Want to take your home cooking to the next level?**
+* **Craving some authentic local cuisine?**
+
+At Taste Buddiez, we believe food is more than just fuel — it’s a connection. Our mission is to bring neighbors together through the flavors they create and love. Whether you’re a busy professional craving home-cooked variety, a local chef eager to share your craft, or a foodie seeking authentic dishes from your own community, Taste Buddiez makes it simple to buy, sell, and swap homemade meals right in your neighborhood.
 
 # Quick Start Guide
 
