@@ -12,6 +12,20 @@
 
 At Taste Buddiez, we believe food is more than just fuel — it’s a connection. Our mission is to bring neighbors together through the flavors they create and love. Whether you’re a busy professional craving home-cooked variety, a local chef eager to share your craft, or a foodie seeking authentic dishes from your own community, Taste Buddiez makes it simple to buy, sell, and swap homemade meals right in your neighborhood.
 
+## Our Product
+
+### Taste Buddies is a neighborhood meal-sharing platform that allows users to:
+* List homemade meals for sale or swap
+* Discover meals from local home cooks
+* Build community through food sharing
+* Review and rate meals
+
+### Technology Stack:
+* Backend: FastAPI (Python)
+* Database: MongoDB
+* Frontend: React (Port 5173)
+* Containerization: Docker & Docker Compose
+
 ## Quick Start Guide
 
 ### 0. Prerequisites
