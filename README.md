@@ -5,6 +5,23 @@
 [![Code Coverage](https://codecov.io/gh/madisonbook/CSC510/branch/alicebadges/graph/badge.svg)](https://codecov.io/gh/madisonbook/CSC510)
 
 
+## Overview
+
+Taste Buddies is a neighborhood meal-sharing platform that allows users to:
+- List homemade meals for sale or swap
+- Discover meals from local home cooks
+- Build community through food sharing
+- Review and rate meals
+
+**Technology Stack:**
+- **Backend:** FastAPI (Python)
+- **Database:** MongoDB
+- **Frontend:** React (port 5173)
+- **Containerization:** Docker & Docker Compose
+
+---
+
+
 # Quick Start Guide
 
 ## 0. Prerequisites
