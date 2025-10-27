@@ -204,12 +204,6 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                           </div>
                         )}
 
-                        {meal.dietaryInfo.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {meal.dietaryInfo.map(info => <Badge key={info} className="text-xs bg-accent">{info}</Badge>)}
-                          </div>
-                        )}
-
                         {(meal.ingredients || meal.nutritionInfo) && (
                           <div className="space-y-1 pt-2">
                             {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}

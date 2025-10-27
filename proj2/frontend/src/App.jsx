@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import { Button } from "./components/ui/button"
 import EmailVerification from './components/EmailVerification';
 
+
 function App() {
 
   return (
