@@ -101,18 +101,17 @@ export default function Dashboard({ onLogout }) {
     fetchMeals();
   }, [userId, userEmail]);
 
-
   
   const [preferences, setPreferences] = useState({
     cuisines: [], // Empty by default - show all cuisines
     allergens: [],
-    dietaryRestrictions: [],
     priceRange: [1, 4], // Show all price ranges by default
     maxDistance: 25, // Maximum distance
-    preferHealthy: false,
-    preferQuick: true,
     userLocation: null // Will store { address: string, lat: number, lng: number }
   });
+  useEffect(() => {
+  console.log('Preferences updated:', preferences);
+}, [preferences]);
 
   const [userRatings, setUserRatings] = useState({});
 
@@ -210,7 +209,7 @@ export default function Dashboard({ onLogout }) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4 tracking-tight font-serif font-semibold text-primary">
-            Welcome back, {user?.full_name ? user.full_name.split(' ')[0] : "User"}!!
+            Welcome back, {user?.full_name ? user.full_name.split(' ')[0] : "User"}!
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground font-sans">
             Ready to discover delicious homemade meals or share your own creations?

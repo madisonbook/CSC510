@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getAllMeals } from '../services/MealService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -10,32 +11,11 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 
-const MOCK_MEALS = [
-  {
-    id: '1',
-    name: 'Homemade Lasagna',
-    cookName: 'Maria R.',
-    cuisine: '🍕 Italian',
-    description: 'Classic Italian lasagna with layers of homemade pasta, rich meat sauce, béchamel, and mozzarella. Made fresh this morning!',
-    rating: 4.9,
-    price: 15,
-    distance: 0.5,
-    location: '123 Main St, Downtown',
-    postedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    imageUrl: 'https://images.unsplash.com/photo-1573070640082-32bf80e3efe0?...',
-    allergens: ['🥛 Dairy', '🌾 Gluten', '🍳 Eggs'],
-    dietaryInfo: [],
-    tags: ['Comfort Food', 'Family Recipe', 'Freezer-Friendly'],
-    isSwapAvailable: true,
-    servings: 4,
-    ingredients: 'Ground beef, Ricotta cheese, Mozzarella, Lasagna noodles, Tomato sauce, Herbs',
-    nutritionInfo: 'Per serving: 450 cal, 25g protein, 40g carbs, 20g fat'
-  },
-  // ... (include the rest of your meal objects here)
-];
 
 export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation }) {
+  const [meals, setMeals] = useState([]);
   const [selectedMeal, setSelectedMeal] = useState(null);
+  const [filteredMeals, setFilteredMeals] = useState([]);
   const [ratingValue, setRatingValue] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -43,22 +23,45 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   const [reportDetails, setReportDetails] = useState('');
   const [reportingMeal, setReportingMeal] = useState(null);
 
-  const getTimeRemaining = (postedAt) => {
-    const posted = new Date(postedAt);
-    const now = new Date();
-    const hoursElapsed = (now - posted) / (1000 * 60 * 60);
-    const hoursRemaining = Math.max(0, 24 - hoursElapsed);
+  // fetch meals
+  useEffect(() => {
+    async function fetchMeals() {
+      const data = await getAllMeals();
+      console.log('Fetched meals from DB:', data);
+      setMeals(data);
+    } fetchMeals();
+  }, []);
 
-    if (hoursRemaining === 0) return 'Expired';
-    if (hoursRemaining < 1) return `${Math.round(hoursRemaining * 60)} min left`;
-    return `${Math.round(hoursRemaining)}h left`;
-  };
+  function mapPriceToLevel(price) {
+    if (price <= 20) return 1;       
+    if (price <= 40) return 2;      
+    if (price <= 60) return 3;       
+  return 4;                        
+}
 
-  const isExpired = (postedAt) => {
-    const posted = new Date(postedAt);
-    const now = new Date();
-    return (now - posted) / (1000 * 60 * 60) >= 24;
-  };
+  // filter meals based on preferences
+  useEffect(() => {
+    if (!meals.length || !preferences) return;
+
+    const filtered = meals.filter((meal) => {
+      const cuisineMatch = !(preferences?.cuisines?.length) || preferences.cuisines.includes(meal.cuisine_type);
+      const allergenMatch = !meal.allergens?.some(a => preferences?.allergens?.includes(a));
+      const priceLevel = mapPriceToLevel(Number(meal.sale_price));
+      const priceMatch = !(preferences?.priceRange?.length) ||
+        (priceLevel >= preferences.priceRange[0] && priceLevel <= preferences.priceRange[1]);
+         console.log(meal.name, { cuisineMatch, allergenMatch, priceMatch });
+      return cuisineMatch && allergenMatch && priceMatch;
+    });
+
+    // Debug logs
+    console.log('Meals before filtering:', meals);
+    console.log('Preferences:', preferences);
+    console.log('Filtered meals:', filtered);
+
+    setFilteredMeals(filtered);
+  }, [meals, preferences]);
+
+
 
   const handleReport = () => {
     if (!reportReason) {
@@ -72,37 +75,6 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     setReportingMeal(null);
   };
 
-  const getRecommendations = () => {
-    return MOCK_MEALS
-      .filter(meal => {
-        if (isExpired(meal.postedAt)) return false;
-        const priceLevel = Math.ceil(meal.price / 10);
-        if (priceLevel < preferences.priceRange[0] || priceLevel > preferences.priceRange[1]) return false;
-        if (meal.distance > preferences.maxDistance) return false;
-        if (preferences.cuisines.length > 0 && !preferences.cuisines.includes(meal.cuisine)) return false;
-        if (preferences.allergens.some(allergen => meal.allergens.includes(allergen))) return false;
-        if (preferences.dietaryRestrictions.length > 0) {
-          const hasMatchingDiet = preferences.dietaryRestrictions.some(diet =>
-            meal.dietaryInfo.includes(diet)
-          );
-          if (!hasMatchingDiet) return false;
-        }
-        return true;
-      })
-      .map(meal => {
-        let score = meal.rating;
-        if (preferences.cuisines.includes(meal.cuisine)) score += 0.4;
-        preferences.dietaryRestrictions.forEach(diet => {
-          if (meal.dietaryInfo.includes(diet)) score += 0.3;
-        });
-        score -= meal.distance * 0.1;
-        return { ...meal, score };
-      })
-      .sort((a, b) => b.score - a.score);
-  };
-
-  const recommendations = getRecommendations();
-
   const handleRateMeal = () => {
     if (selectedMeal) {
       onRateRestaurant(selectedMeal.id, ratingValue, reviewText);
@@ -112,7 +84,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     }
   };
 
-  const renderStars = (rating, interactive = false, onRatingChange) => (
+  const renderStars = (rating = 0, interactive = false, onRatingChange) => (
     <div className="flex items-center space-x-1">
       {[1, 2, 3, 4, 5].map(star => (
         <Star
@@ -125,10 +97,9 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     </div>
   );
 
-  if (recommendations.length === 0) {
+  if (!filteredMeals.length) {
     return (
       <div className="text-center py-12 space-y-4">
-        <div className="text-6xl">😔</div>
         <h3>No meals match your preferences</h3>
         <p className="text-muted-foreground">Try adjusting your preferences or check back later for new meals</p>
       </div>
@@ -139,22 +110,22 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
         <h2 className="text-xl sm:text-2xl">Available Meals Near You</h2>
-        <Badge variant="secondary" className="self-start sm:self-auto">{recommendations.length} meals found</Badge>
+        <Badge variant="secondary" className="self-start sm:self-auto">{filteredMeals.length} meals found</Badge>
       </div>
 
       <div className="grid gap-4 sm:gap-6">
-        {recommendations.map(meal => (
+        {filteredMeals.length > 0 && filteredMeals.map(meal => (
           <Card key={meal.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="flex flex-col md:flex-row">
               <div className="w-full md:w-64 h-48 md:h-auto relative overflow-hidden">
-                <img src={meal.imageUrl} alt={meal.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                <img src={meal.photos[0]} alt={meal.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
                 <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col gap-2">
                   <Badge className="bg-green-500/90 backdrop-blur-sm text-xs">
                     <Clock className="w-3 h-3 mr-1" />
-                    {getTimeRemaining(meal.postedAt)}
+                    
                   </Badge>
-                  {meal.isSwapAvailable && <Badge className="bg-primary/90 backdrop-blur-sm text-xs sm:text-sm">🔄 Swap Available</Badge>}
+                  {meal.available_for_swap && <Badge className="bg-primary/90 backdrop-blur-sm text-xs sm:text-sm">🔄 Swap Available</Badge>}
                 </div>
               </div>
 
@@ -163,17 +134,17 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                   <div className="flex items-start justify-between">
                     <div className="space-y-2 sm:space-y-3">
                       <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
-                        <span>{meal.name}</span>
+                        <span>{meal.title}</span>
                         {userRatings[meal.id] && <Heart className="w-4 h-4 fill-red-500 text-red-500 shrink-0" />}
                       </CardTitle>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1"><User2 className="w-3 h-3 shrink-0" /><span>{meal.cookName}</span></div>
-                        <span>{meal.cuisine}</span>
-                        <div className="flex items-center space-x-1"><DollarSign className="w-3 h-3 shrink-0" /><span>${meal.price}</span></div>
+                        <div className="flex items-center space-x-1"><User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span></div>
+                        <span>{meal.cuisine_type}</span>
+                        <div className="flex items-center space-x-1"><DollarSign className="w-3 h-3 shrink-0" /><span>${meal.sale_price}</span></div>
                         <div className="flex items-center space-x-1"><MapPin className="w-3 h-3 shrink-0" /><span>{meal.distance} mi away</span></div>
-                        <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.servings} servings</span></div>
+                        <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size} servings</span></div>
                       </div>
-                      {renderStars(meal.rating)}
+                      {renderStars(meal.average_rating)}
                     </div>
                   </div>
                   <CardDescription className="text-sm sm:text-base">{meal.description}</CardDescription>
@@ -185,21 +156,18 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                       <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">Pickup Location</p>
-                        <p className="text-xs text-muted-foreground">{meal.location}</p>
+                        <p className="text-xs text-muted-foreground">{meal.pickup_instructions}</p>
                       </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                       <div className="space-y-2">
-                        <div className="flex flex-wrap gap-2">
-                          {meal.tags.slice(0, 3).map(tag => <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>)}
-                        </div>
 
-                        {meal.allergens.length > 0 && (
+                        {meal.allergens?.length > 0 && (
                           <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                             <span className="text-xs text-muted-foreground shrink-0">Contains:</span>
                             <div className="flex flex-wrap gap-1">
-                              {meal.allergens.map(allergen => <Badge key={allergen} variant="destructive" className="text-xs">{allergen}</Badge>)}
+                              {meal.allergens?.map(allergen => <Badge key={allergen} variant="destructive" className="text-xs">{allergen}</Badge>)}
                             </div>
                           </div>
                         )}
