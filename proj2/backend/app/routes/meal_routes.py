@@ -59,8 +59,8 @@ async def create_meal(
         "cuisine_type": meal.cuisine_type,
         "meal_type": meal.meal_type,
         "photos": meal.photos,
-        "allergen_info": meal.allergen_info.dict(),
-        "nutrition_info": meal.nutrition_info.dict() if meal.nutrition_info else None,
+        "allergen_info": meal.allergen_info.model_dump(),
+        "nutrition_info": meal.nutrition_info.model_dump() if meal.nutrition_info else None,
         "portion_size": meal.portion_size,
         "available_for_sale": meal.available_for_sale,
         "sale_price": meal.sale_price,
@@ -217,9 +217,9 @@ async def update_meal(
     if meal_update.photos is not None:
         update_data["photos"] = meal_update.photos
     if meal_update.allergen_info is not None:
-        update_data["allergen_info"] = meal_update.allergen_info.dict()
+        update_data["allergen_info"] = meal_update.allergen_info.model_dump()
     if meal_update.nutrition_info is not None:
-        update_data["nutrition_info"] = meal_update.nutrition_info.dict()
+        update_data["nutrition_info"] = meal_update.nutrition_info.model_dump()
     if meal_update.portion_size is not None:
         update_data["portion_size"] = meal_update.portion_size
     if meal_update.available_for_sale is not None:
