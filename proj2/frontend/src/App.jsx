@@ -5,7 +5,7 @@ import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import { Button } from "./components/ui/button"
 import EmailVerification from './components/EmailVerification';
-
+import './styles/globalstyles.css';
 
 function App() {
 
