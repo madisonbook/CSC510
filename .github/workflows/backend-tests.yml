@@ -12,16 +12,16 @@ jobs:
 
     - name: Build backend-tests service
       run: |
-        docker compose -f proj2/backend/docker-compose.yml build backend-tests
+        docker compose -f proj2/docker-compose.yml build backend-tests
 
     - name: Run backend tests
       run: |
-        docker compose -f proj2/backend/docker-compose.yml up --exit-code-from backend-tests backend-tests
+        docker compose -f proj2/docker-compose.yml up --exit-code-from backend-tests backend-tests
 
     - name: Tear down containers
       if: always()
       run: |
-        docker compose -f proj2/backend/docker-compose.yml down -v
+        docker compose -f proj2/docker-compose.yml down -v
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
