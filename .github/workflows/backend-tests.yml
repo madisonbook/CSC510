@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     
     - name: Start test services
       run: |
@@ -44,16 +44,17 @@ jobs:
     
     - name: Upload coverage to Codecov
       if: always()
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
     
     - name: Upload coverage HTML report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: htmlcov/
@@ -61,11 +62,95 @@ jobs:
     
     - name: Comment PR with coverage
       if: github.event_name == 'pull_request' && always()
-      uses: py-cov-action/python-coverage-comment-action@v4
+      uses: actions/github-script@v7
       with:
-        GITHUB_TOKEN: ${{ github.token }}
-        MINIMUM_GREEN: 80
-        MINIMUM_ORANGE: 70
+        script: |
+          const fs = require('fs');
+          
+          // Read coverage report
+          let coverageComment = '## 📊 Test Coverage Report\n\n';
+          
+          try {
+            if (fs.existsSync('coverage.xml')) {
+              const xml = fs.readFileSync('coverage.xml', 'utf8');
+              
+              // Extract coverage percentage
+              const match = xml.match(/line-rate="([0-9.]+)"/);
+              if (match) {
+                const coverage = (parseFloat(match[1]) * 100).toFixed(1);
+                coverageComment += `**Coverage:** ${coverage}%\n\n`;
+                
+                // Add status based on thresholds
+                if (coverage >= 80) {
+                  coverageComment += '✅ **Status:** Excellent coverage (≥80%)\n';
+                } else if (coverage >= 70) {
+                  coverageComment += '⚠️ **Status:** Good coverage (≥70%), aim for 80%\n';
+                } else {
+                  coverageComment += '❌ **Status:** Coverage below 70%, needs improvement\n';
+                }
+              } else {
+                coverageComment += '⚠️ Could not parse coverage percentage\n';
+              }
+            } else {
+              coverageComment += '⚠️ Coverage report not found\n';
+            }
+          } catch (error) {
+            coverageComment += `⚠️ Error reading coverage: ${error.message}\n`;
+          }
+          
+          coverageComment += '\n📁 Download detailed HTML report from the artifacts section above.\n';
+          
+          // Post comment
+          try {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: coverageComment
+            });
+          } catch (error) {
+            console.log('Could not post comment:', error);
+          }
+    
+    - name: Add coverage to summary
+      if: always()
+      run: |
+        echo "## 📊 Test Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f coverage.xml ]; then
+          # Extract coverage using Python (more reliable)
+          COVERAGE=$(python3 -c "
+          import xml.etree.ElementTree as ET
+          try:
+              tree = ET.parse('coverage.xml')
+              root = tree.getroot()
+              coverage = float(root.attrib.get('line-rate', 0)) * 100
+              print(f'{coverage:.1f}')
+          except Exception as e:
+              print('N/A')
+          " 2>/dev/null || echo "N/A")
+          
+          echo "**Overall Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Add status emoji
+          if [ "$COVERAGE" != "N/A" ]; then
+            COVERAGE_NUM=$(echo $COVERAGE | cut -d'%' -f1)
+            if (( $(echo "$COVERAGE_NUM >= 80" | bc -l) )); then
+              echo "✅ Excellent coverage!" >> $GITHUB_STEP_SUMMARY
+            elif (( $(echo "$COVERAGE_NUM >= 70" | bc -l) )); then
+              echo "⚠️ Good coverage, aim for 80%" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Coverage needs improvement" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+        else
+          echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📁 Download detailed report from artifacts" >> $GITHUB_STEP_SUMMARY
     
     - name: Cleanup
       if: always()
