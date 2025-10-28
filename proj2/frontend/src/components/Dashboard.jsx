@@ -10,6 +10,7 @@ import { PreferencesTab } from './PreferencesTab';
 import RecommendationsTab from './RecommendationsTab';
 import MyMealsTab from './MyMealsTab';
 import { useNavigate } from 'react-router-dom';
+import Profile from './Profile';
 
 
 export default function Dashboard({ onLogout }) {
@@ -198,11 +199,8 @@ export default function Dashboard({ onLogout }) {
               </div>
 
               <div className="flex items-center space-x-1 sm:space-x-3">
-                <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
-                  <AvatarFallback>
-                    <User className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </AvatarFallback>
-                </Avatar>
+                <Profile user={user} onUserUpdate={(updatedUser) => setUser(updatedUser)} />
+               
                 <div className="hidden md:block">
                   <p className="text-sm">{fullName}</p>
                 </div>

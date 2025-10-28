@@ -95,9 +95,15 @@ function LandingPage({ onAuthSuccess }) {
           email: signupEmail,
           password: signupPassword,
           full_name: signupName,
-          phone: "",
-          location: { address: "", city: "", state: "", zip_code: "", latitude: 0, longitude: 0 },
-          bio: "",
+          phone: phone || "",
+          location: {
+            address: address || "",
+            city: city || "",
+            state: state || "",
+            zip_code: zipCode || "",
+            latitude: latitude || 0,
+            longitude: longitude || 0,
+          },
           profile_picture: ""
         })
       });
