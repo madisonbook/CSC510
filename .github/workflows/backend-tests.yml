@@ -150,7 +150,7 @@ jobs:
     - name: Cleanup
       if: always()
       run: |
-        docker-compose --profile test down -v
+        docker compose -f proj2/docker-compose.yml --profile test down -v
         docker system prune -f
 
   test-summary:
