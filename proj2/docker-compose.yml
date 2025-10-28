@@ -1,54 +1,6 @@
 version: '3.9'
 
 services:
-
-  mongodb:
-    image: mongo:7.0
-    container_name: mongodb
-    restart: always
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_DATABASE: myapp
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - app-network
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: fastapi-backend
-    restart: always
-    ports:
-      - "8000:8000"
-    environment:
-      - MONGODB_URL=mongodb://mongodb:27017
-      - DATABASE_NAME=myapp
-    depends_on:
-      - mongodb
-    volumes:
-      - ./backend/app:/app/app
-    networks:
-      - app-network
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: react-frontend
-    restart: always
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-    networks:
-      - app-network
-
   # Test MongoDB - separate from production
   test-mongo:
     image: mongo:6.0
@@ -66,12 +18,12 @@ services:
       retries: 5
       start_period: 5s
 
-  # Backend tests service
-  backend-tests:
+  # Run meal tests
+  test-meals:
     build:
-      context: ./backend  # Set context to backend folder
+      context: ./backend
       dockerfile: Dockerfile.test
-    container_name: backend_tests
+    container_name: test_meals
     depends_on:
       test-mongo:
         condition: service_healthy
@@ -79,20 +31,101 @@ services:
       - TEST_MONGO_URL=mongodb://test-mongo:27017
       - TEST_DB_NAME=test_meal_db
       - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ./backend/app:/app/app  # Mount from backend folder
-      - ./backend/pytest.ini:/app/pytest.ini  # Mount from backend folder
+      - ./backend/app:/app/app
+      - ./backend/pytest.ini:/app/pytest.ini
+      - ./backend/.coveragerc:/app/.coveragerc
+      - ./backend/htmlcov:/app/htmlcov
     networks:
       - test-network
-    command: pytest app/tests/test_meals.py -v --tb=short
+    command: pytest app/tests/test_meals.py -v --tb=short --color=yes
     profiles:
       - test
 
-volumes:
-  mongodb_data:
+  # Run user tests
+  test-users:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: test_users
+    depends_on:
+      test-mongo:
+        condition: service_healthy
+    environment:
+      - TEST_MONGO_URL=mongodb://test-mongo:27017
+      - TEST_DB_NAME=test_meal_db
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/pytest.ini:/app/pytest.ini
+      - ./backend/.coveragerc:/app/.coveragerc
+      - ./backend/htmlcov:/app/htmlcov
+    networks:
+      - test-network
+    command: pytest app/tests/test_users.py -v --tb=short --color=yes
+    profiles:
+      - test
+
+  # Run integration tests
+  test-integration:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: test_integration
+    depends_on:
+      test-mongo:
+        condition: service_healthy
+    environment:
+      - TEST_MONGO_URL=mongodb://test-mongo:27017
+      - TEST_DB_NAME=test_meal_db
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/pytest.ini:/app/pytest.ini
+      - ./backend/.coveragerc:/app/.coveragerc
+      - ./backend/htmlcov:/app/htmlcov
+    networks:
+      - test-network
+    command: pytest app/tests/test_integration.py -v --tb=short --color=yes -m "integration or system"
+    profiles:
+      - test
+
+  # Run ALL tests with coverage
+  test-all:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: test_all
+    depends_on:
+      test-mongo:
+        condition: service_healthy
+    environment:
+      - TEST_MONGO_URL=mongodb://test-mongo:27017
+      - TEST_DB_NAME=test_meal_db
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/pytest.ini:/app/pytest.ini
+      - ./backend/.coveragerc:/app/.coveragerc
+      - ./backend/htmlcov:/app/htmlcov
+    networks:
+      - test-network
+    command: >
+      sh -c "pytest app/tests/ -v --tb=short --color=yes 
+      --cov=app 
+      --cov-report=html 
+      --cov-report=term-missing 
+      --cov-report=xml
+      && echo '========================================' 
+      && echo 'Coverage report saved to htmlcov/index.html'
+      && echo '========================================'"
+    profiles:
+      - test
 
 networks:
   test-network:
-    driver: bridge
-  app-network:
     driver: bridge
