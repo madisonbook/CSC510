@@ -6,23 +6,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    services:
-      mongo:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Docker Compose
+    - name: Build backend-tests service
       run: |
-        docker-compose -f proj2/backend/docker-compose.yml build backend-tests
+        docker compose -f proj2/backend/docker-compose.yml build backend-tests
 
-    - name: Run backend tests via docker-compose
+    - name: Run backend tests
       run: |
-        docker-compose -f proj2/backend/docker-compose.yml up --exit-code-from backend-tests backend-tests
+        docker compose -f proj2/backend/docker-compose.yml up --exit-code-from backend-tests backend-tests
+
+    - name: Tear down containers
+      if: always()
+      run: |
+        docker compose -f proj2/backend/docker-compose.yml down -v
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
