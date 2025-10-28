@@ -10,6 +10,14 @@ python-multipart==0.0.6
 email-validator==2.1.0
 python-jose[cryptography]==3.3.0
 pytest
+<<<<<<< HEAD
 pytest-mock
 httpx==0.26.0
 pytest-asyncio>=0.21.0
+=======
+pytest-asyncio
+httpx
+pytest-cov
+coverage
+flake8
+>>>>>>> 287d92d4fba9a2d48e775bb5df4409a62cb62f20
