@@ -14,22 +14,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Build backend-tests service
+    - name: Build test services
       run: |
-        docker compose -f proj2/docker-compose.yml build backend-tests
+        docker compose -f proj2/docker-compose.yml --profile test build
     
-    - name: Run Meal Tests
+   - name: Run Meal Tests
       run: |
-        docker-compose --profile test up test-meals --abort-on-container-exit --exit-code-from test-meals
-    
+        docker compose -f proj2/docker-compose.yml --profile test up test-meals --abort-on-container-exit --exit-code-from test-meals
+
     - name: Run User Tests
       run: |
-        docker-compose --profile test up test-users --abort-on-container-exit --exit-code-from test-users
-    
+        docker compose -f proj2/docker-compose.yml --profile test up test-users --abort-on-container-exit --exit-code-from test-users
+
     - name: Run All Tests with Coverage
       run: |
-        docker-compose --profile test up test-all --abort-on-container-exit --exit-code-from test-all
-    
+        docker compose -f proj2/docker-compose.yml --profile test up test-all --abort-on-container-exit --exit-code-from test-all
+
     - name: Extract coverage reports
       if: always()
       run: |
