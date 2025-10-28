@@ -199,8 +199,8 @@ function LandingPage({ onAuthSuccess }) {
             <CardContent className="p-6 sm:p-10">
               <Tabs defaultValue="signup" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/50 h-12">
-                  <TabsTrigger value="signup" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
-                  <TabsTrigger value="login" className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
+                  <TabsTrigger value="signup" className=" data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
+                  <TabsTrigger value="login" className=" data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
                 </TabsList>
 
                 {/* Signup Form */}                
@@ -281,7 +281,7 @@ function LandingPage({ onAuthSuccess }) {
                     </div>
 
                     
-                    <Button type="submit" className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-sans font-medium text-base shadow-lg transition-all duration-200">
+                    <Button type="submit" className="cursor-pointer w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-sans font-medium text-base shadow-lg transition-all duration-200">
                       Create Account →
                     </Button>
                   </form>
@@ -309,7 +309,7 @@ function LandingPage({ onAuthSuccess }) {
                         required
                       />
                     </div>
-                    <Button type="submit" className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-sans font-medium text-base shadow-lg transition-all duration-200">
+                    <Button type="submit" className="cursor-pointer w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-sans font-medium text-base shadow-lg transition-all duration-200">
                       Sign In →
                     </Button>
                   </form>

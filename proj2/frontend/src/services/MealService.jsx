@@ -160,6 +160,39 @@ export const updateMeal = async (mealId, updateData) => {
 };
 
 /**
+ * Update user's dietary preferences
+ * PUT /api/users/me/dietary-preferences
+ */
+export const updateDietaryPreferences = async (preferences) => {
+  try {
+    const response = await fetch(`${backendURL}/api/users/me/dietary-preferences`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders() // include auth headers
+      },
+      body: JSON.stringify({
+        dietary_restrictions: [], // not using
+        allergens: preferences.allergens,
+        cuisine_preferences: preferences.cuisines,
+        spice_level: "" // not using
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to update dietary preferences");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating dietary preferences:", error);
+    throw error;
+  }
+};
+
+
+/**
  * Delete a meal
  * DELETE /api/meals/{meal_id}
  */

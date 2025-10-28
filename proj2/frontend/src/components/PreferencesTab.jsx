@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -19,7 +20,7 @@ const COMMON_ALLERGENS = [
   '🐟 Fish', '🍓 Soy', '🌽 Corn', '🥥 Coconut'
 ];
 
-export function PreferencesTab({ preferences, onPreferencesChange }) {
+export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
   const toggleArrayItem = (array, item) => {
     return array.includes(item)
       ? array.filter(i => i !== item)
@@ -119,7 +120,7 @@ export function PreferencesTab({ preferences, onPreferencesChange }) {
                   max={4}
                   min={1}
                   step={1}
-                  className="w-full"
+                  className="cursor-pointer w-full"
                 />
               </div>
               <div className="grid grid-cols-4 text-xs sm:text-sm text-muted-foreground text-center">
@@ -163,7 +164,7 @@ export function PreferencesTab({ preferences, onPreferencesChange }) {
                   max={25}
                   min={1}
                   step={1}
-                  className="w-full"
+                  className="cursor-pointer w-full"
                 />
               </div>
               <div className="text-center">
@@ -206,7 +207,8 @@ export function PreferencesTab({ preferences, onPreferencesChange }) {
       </Card>
 
       <div className="flex justify-end px-4 sm:px-0">
-        <Button className="bg-primary hover:bg-primary/90 font-sans w-full sm:w-auto">
+        <Button className="cursor-pointer bg-primary hover:bg-primary/90 font-sans w-full sm:w-auto"
+          onClick={onSave}>
           Save Preferences
         </Button>
       </div>

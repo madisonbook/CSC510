@@ -236,9 +236,9 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                   <SelectValue placeholder="Select a reason" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Inappropriate Content">Inappropriate Content</SelectItem>
-                  <SelectItem value="Spam">Spam</SelectItem>
-                  <SelectItem value="Incorrect Information">Incorrect Information</SelectItem>
+                  <SelectItem value="Caused Illness">Caused Illness</SelectItem>
+                  <SelectItem value="Spoiled">Spoiled</SelectItem>
+                  <SelectItem value="Unhygienic">Unhygienic</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>

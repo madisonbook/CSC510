@@ -246,7 +246,7 @@ export default function MyMealsTab({ userLocation }) {
         {/* adding new meal */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto">
+            <Button className="cursor-pointer bg-primary hover:bg-primary/90 w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Meal
             </Button>
@@ -283,7 +283,7 @@ export default function MyMealsTab({ userLocation }) {
                         onValueChange={(value) => setFormData({ ...formData, cuisine: value })}
                         required
                       >
-                        <SelectTrigger className="h-9 sm:h-10">
+                        <SelectTrigger className="cursor-pointer h-9 sm:h-10">
                           <SelectValue placeholder="Select cuisine" />
                         </SelectTrigger>
                         <SelectContent>
@@ -422,6 +422,7 @@ export default function MyMealsTab({ userLocation }) {
                       onCheckedChange={(checked) =>
                         setFormData({ ...formData, isSwapAvailable: checked })
                       }
+                      className="cursor-pointer"
                     />
                   </div>
                 </div>
@@ -432,13 +433,13 @@ export default function MyMealsTab({ userLocation }) {
                       type="button"
                       variant="outline"
                       onClick={() => setIsAddDialogOpen(false)}
-                      className="w-full sm:w-auto"
+                      className="cursor-pointer w-full sm:w-auto"
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
-                      className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
+                      className="cursor-pointer bg-primary hover:bg-primary/90 w-full sm:w-auto"
                     >
                       Add Meal
                     </Button>
@@ -545,6 +546,7 @@ export default function MyMealsTab({ userLocation }) {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEditMeal(meal)}
+                          className="cursor-pointer"
                         >
                           Edit
                         </Button>
@@ -556,7 +558,7 @@ export default function MyMealsTab({ userLocation }) {
                           setMealToDelete(meal);
                           setIsDeleteOpen(true);
                         }}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                         <Trash2 className="w-4 h-4" />
                       </Button>

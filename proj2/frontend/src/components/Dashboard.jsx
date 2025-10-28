@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import { useEffect, useState } from 'react';
+import { updateDietaryPreferences } from '../services/MealService';
 import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -101,17 +102,30 @@ export default function Dashboard({ onLogout }) {
     fetchMeals();
   }, [userId, userEmail]);
 
-  
-  const [preferences, setPreferences] = useState({
-    cuisines: [], // Empty by default - show all cuisines
-    allergens: [],
-    priceRange: [1, 4], // Show all price ranges by default
-    maxDistance: 25, // Maximum distance
-    userLocation: null // Will store { address: string, lat: number, lng: number }
+  // save user preferences
+  const [preferences, setPreferences] = useState(() => {
+    const saved = localStorage.getItem("preferences");
+    return saved
+      ? JSON.parse(saved)
+      : {
+          cuisines: [], // Empty by default - show all cuisines
+          allergens: [],
+          priceRange: [1, 4], // Show all price ranges by default
+          maxDistance: 25, // Maximum distance
+          userLocation: null // Will store { address: string, lat: number, lng: number }
+        };
+
   });
   useEffect(() => {
-  console.log('Preferences updated:', preferences);
+    localStorage.setItem("preferences", JSON.stringify(preferences));
+    console.log('Preferences updated:', preferences);
 }, [preferences]);
+
+  const savePreferences = () => {
+    localStorage.setItem("preferences", JSON.stringify(preferences));
+    alert("preferences saved")
+  };
+
 
   const [userRatings, setUserRatings] = useState({});
 
@@ -121,6 +135,7 @@ export default function Dashboard({ onLogout }) {
       [restaurantId]: { rating, review }
     }));
   };
+  
 
   const handleAddMeal = (meal) => {
     const newMeal = {
@@ -189,13 +204,13 @@ export default function Dashboard({ onLogout }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block">
-                  <p className="text-sm">{userId}</p>
+                  <p className="text-sm">{fullName}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={onLogout}
-                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  onClick={handleLogout}
+                  className="cursor-pointer h-8 w-8 sm:h-9 sm:w-9"
                 >
                   <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
@@ -299,6 +314,7 @@ export default function Dashboard({ onLogout }) {
             <PreferencesTab
               preferences={preferences}
               onPreferencesChange={setPreferences}
+              onSave={savePreferences}
             />
           </TabsContent>
         </Tabs>
