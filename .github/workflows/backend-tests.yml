@@ -14,14 +14,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-    
-    - name: Start test services
+    - name: Build backend-tests service
       run: |
-        docker-compose --profile test up -d test-mongo
-        echo "Waiting for MongoDB to be healthy..."
-        timeout 60 sh -c 'until docker-compose --profile test ps | grep test_mongo | grep healthy; do sleep 2; done'
+        docker compose -f proj2/docker-compose.yml build backend-tests
     
     - name: Run Meal Tests
       run: |
