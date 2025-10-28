@@ -18,7 +18,7 @@ jobs:
       run: |
         docker compose -f proj2/docker-compose.yml --profile test build
     
-   - name: Run Meal Tests
+    - name: Run Meal Tests
       run: |
         docker compose -f proj2/docker-compose.yml --profile test up test-meals --abort-on-container-exit --exit-code-from test-meals
 
