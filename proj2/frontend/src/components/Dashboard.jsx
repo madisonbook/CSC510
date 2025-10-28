@@ -199,7 +199,7 @@ export default function Dashboard({ onLogout }) {
               </div>
 
               <div className="flex items-center space-x-1 sm:space-x-3">
-                <Profile user={user} onUserUpdate={(updatedUser) => setUser(updatedUser)} />
+                <Profile user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />
                
                 <div className="hidden md:block">
                   <p className="text-sm">{fullName}</p>
