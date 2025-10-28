@@ -163,11 +163,11 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                       <div className="space-y-2">
 
-                        {meal.allergens?.length > 0 && (
+                        {meal.allergen_info?.contains?.length > 0 && (
                           <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                             <span className="text-xs text-muted-foreground shrink-0">Contains:</span>
                             <div className="flex flex-wrap gap-1">
-                              {meal.allergens?.map(allergen => <Badge key={allergen} variant="destructive" className="text-xs">{allergen}</Badge>)}
+                              {meal.allergen_info.contains.map(allergen => <Badge key={allergen} variant="destructive" className="text-xs">{allergen}</Badge>)}
                             </div>
                           </div>
                         )}
