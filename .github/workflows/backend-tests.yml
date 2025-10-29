@@ -168,4 +168,7 @@ jobs:
         echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         if [ "${{ needs.test.result }}" == "success" ]; then
-          
+          echo "✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Some tests failed. Please check the logs above." >> $GITHUB_STEP_SUMMARY
+        fi
