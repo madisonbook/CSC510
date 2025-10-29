@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 
 
-export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation }) {
+export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation, addToCart }) {
   const [meals, setMeals] = useState([]);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [filteredMeals, setFilteredMeals] = useState([]);
@@ -32,11 +32,27 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     } fetchMeals();
   }, []);
 
+  // meal price range  
   function mapPriceToLevel(price) {
-    if (price <= 20) return 1;       
-    if (price <= 40) return 2;      
-    if (price <= 60) return 3;       
-  return 4;                        
+    if (price <= 20) return "1";       
+    if (price <= 40) return "2";      
+    if (price <= 60) return "3";       
+  return "4";                        
+}
+
+  // render meal price range in $
+  function renderPriceLevel(price) {
+  const level = mapPriceToLevel(price);
+  const color =
+    level === "1"
+      ? "text-[#D9A299]"
+      : level === "2"
+      ? "text-[#C2857F]"
+      : level === "3"
+      ? "text-[#A86A66]"
+      : "text-[#8F5250]";
+
+  return <span className={`font-semibold ${color}`}>{"$".repeat(level)}</span>;
 }
 
   // filter meals based on preferences
@@ -61,6 +77,10 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     setFilteredMeals(filtered);
   }, [meals, preferences]);
 
+  // add meals to cart
+  const handleAddToCart = (meal) => {
+    console.log("Added to cart: ", meal.title);
+  }
 
 
   const handleReport = () => {
@@ -140,7 +160,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
                         <div className="flex items-center space-x-1"><User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span></div>
                         <span>{meal.cuisine_type}</span>
-                        <div className="flex items-center space-x-1"><DollarSign className="w-3 h-3 shrink-0" /><span>${meal.sale_price}</span></div>
+                        <div className="flex items-center space-x-1"><span>{renderPriceLevel(meal.sale_price)}</span><span>${meal.sale_price}</span></div>
                         <div className="flex items-center space-x-1"><MapPin className="w-3 h-3 shrink-0" /><span>{meal.distance} mi away</span></div>
                         <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size} servings</span></div>
                       </div>
@@ -181,8 +201,14 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                       </div>
 
                       <div className="flex flex-col space-y-2 sm:space-y-3">
-                        <Button size="sm" variant="secondary" onClick={() => setSelectedMeal(meal)}>Rate Meal</Button>
-                        <Button size="sm" variant="destructive-outline" onClick={() => { setReportingMeal(meal); setReportDialogOpen(true); }}>Report</Button>
+                          <Button
+                            onClick={() => addToCart(meal)}
+                            className="cursor-pointer mt-3 bg-[#D9A299] hover:bg-[#d18e82] text-white px-4 py-2 rounded-lg"
+                          >
+                            Add to Cart
+                          </Button>
+                        <Button size="sm" variant="secondary" className="cursor-pointer" onClick={() => setSelectedMeal(meal)}>Rate Meal</Button>
+                        <Button size="sm" variant="destructive-outline" className="cursor-pointer bg-[#FAF7F3]" onClick={() => { setReportingMeal(meal); setReportDialogOpen(true); }}>Report</Button>
                       </div>
                     </div>
                   </div>

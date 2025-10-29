@@ -789,17 +789,11 @@ export default function MyMealsTab({ userLocation }) {
             <Button
               variant="destructive"
               onClick={async () => {
-              if (!mealToDelete) return;
-                try {
-                  await deleteMeal(mealToDelete.id);
-                  setMeals(prev => prev.filter(meal => meal.id !== mealToDelete.id));
-                } catch (error) {
-                console.error("Error deleting meal: ", error);
-                alert(error.message);
-                } finally {
-                setIsDeleteOpen(false);
-                setMealToDelete(null);
-              }
+                if (!mealToDelete) return;
+
+                await handleDeleteMeal(mealToDelete.id); // call the handler
+                setIsDeleteOpen(false); // close the dialog
+                setMealToDelete(null);  // reset the state
               }}
             >
               Delete

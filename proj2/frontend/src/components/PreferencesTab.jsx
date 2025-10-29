@@ -27,6 +27,7 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
       : [...array, item];
   };
 
+  // change cuisine preferences
   const handleCuisineToggle = (cuisine) => {
     onPreferencesChange({
       ...preferences,
@@ -34,6 +35,7 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
     });
   };
 
+  // change allergens
   const handleAllergenToggle = (allergen) => {
     onPreferencesChange({
       ...preferences,
