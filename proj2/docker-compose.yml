@@ -68,6 +68,31 @@ services:
     profiles:
       - test
 
+  # Run main app tests
+  test-main:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: test_main
+    depends_on:
+      test-mongo:
+        condition: service_healthy
+    environment:
+      - TEST_MONGO_URL=mongodb://test-mongo:27017
+      - TEST_DB_NAME=test_meal_db
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/pytest.ini:/app/pytest.ini
+      - ./backend/.coveragerc:/app/.coveragerc
+      - ./backend/htmlcov:/app/htmlcov
+    networks:
+      - test-network
+    command: pytest app/tests/test_main.py -v --tb=short --color=yes
+    profiles:
+      - test
+      
   # Run ALL tests with coverage
   test-all:
     build:

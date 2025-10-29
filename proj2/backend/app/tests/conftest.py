@@ -7,6 +7,7 @@ import pytest_asyncio
 from fastapi.testclient import TestClient
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
+from httpx import AsyncClient, ASGITransport
 
 # Test MongoDB configuration
 TEST_MONGO_URL = os.environ.get("TEST_MONGO_URL", "mongodb://localhost:27018")
@@ -55,3 +56,44 @@ def test_client():
     """Create FastAPI test client"""
     from app.main import app
     return TestClient(app)
+
+@pytest_asyncio.fixture
+async def async_client(mongo_client):
+   """Create async test client for API testing"""
+   from app.main import app
+    
+    # httpx 0.24+ requires ASGITransport
+   transport = ASGITransport(app=app)
+    
+   async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+@pytest.fixture
+def sync_client():
+   """Create synchronous test client"""
+   from app.main import app
+   from starlette.testclient import TestClient
+    
+    # Use Starlette's TestClient directly
+   client = TestClient(app)
+   yield client
+   client.close()
+
+@pytest_asyncio.fixture(autouse=True, scope="function")
+async def clean_test_database(mongo_client):
+    """Clean all test collections before and after each test"""
+    db = mongo_client["test_meal_db"]
+    
+    # Clean before test
+    await db.meals.delete_many({})
+    await db.users.delete_many({})
+    await db.reviews.delete_many({})
+    await db.verification_tokens.delete_many({})
+    
+    yield
+    
+    # Clean after test
+    await db.meals.delete_many({})
+    await db.users.delete_many({})
+    await db.reviews.delete_many({})
+    await db.verification_tokens.delete_many({})

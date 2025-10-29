@@ -25,7 +25,11 @@ jobs:
     - name: Run User Tests
       run: |
         docker compose -f proj2/docker-compose.yml --profile test up test-users --abort-on-container-exit --exit-code-from test-users
-
+    
+    - name: Run Main App Tests
+      run: |
+        docker compose -f docker-compose.yml --profile test up test-main --abort-on-container-exit --exit-code-from test-main
+        
     - name: Run All Tests with Coverage
       run: |
         docker compose -f proj2/docker-compose.yml --profile test up test-all --abort-on-container-exit --exit-code-from test-all
