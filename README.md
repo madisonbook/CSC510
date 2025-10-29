@@ -1,6 +1,6 @@
 [![Syntax Check](https://github.com/madisonbook/CSC510/actions/workflows/syntax-check.yml/badge.svg?branch=alicebadges)](https://github.com/madisonbook/CSC510/actions/workflows/syntax-check.yml)
 
-[![Code Coverage](https://codecov.io/gh/madisonbook/CSC510/branch/alicebadges/graph/badge.svg)](https://codecov.io/gh/madisonbook/CSC510)
+[![Code Coverage](https://codecov.io/gh/madisonbook/CSC510/branch/development/graph/badge.svg)](https://codecov.io/gh/madisonbook/CSC510)
 
 # TASTE BUDDIEZ (Group 26)
 
