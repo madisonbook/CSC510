@@ -4,6 +4,7 @@ Place this file in your tests/ directory as: app/tests/conftest.py
 """
 import pytest
 import pytest_asyncio
+from fastapi.testclient import TestClient
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -48,3 +49,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: mark test as slow running"
     )
+
+@pytest.fixture
+def test_client():
+    """Create FastAPI test client"""
+    from app.main import app
+    return TestClient(app)

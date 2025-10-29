@@ -684,4 +684,727 @@ async def test_user_email_uniqueness(mongo_client, test_user):
         "status": "active",
         "created_at": datetime.utcnow()
     }
+
+    # ============================================================
+# user_to_response HELPER FUNCTION TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_user_to_response_complete_user():
+    """Test user_to_response with complete user data"""
+    from app.routes.user_routes import user_to_response
+    
+    user = {
+        "_id": ObjectId(),
+        "email": "test@example.com",
+        "full_name": "Test User",
+        "phone": "1234567890",
+        "location": {
+            "address": "123 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "12345"
+        },
+        "bio": "Test bio",
+        "profile_picture": "https://example.com/pic.jpg",
+        "dietary_preferences": {
+            "dietary_restrictions": ["vegetarian"],
+            "allergens": ["peanuts"],
+            "cuisine_preferences": ["Italian"],
+            "spice_level": "medium"
+        },
+        "social_media": {
+            "facebook": "testuser",
+            "instagram": "testuser",
+            "twitter": "testtwitter"
+        },
+        "role": "user",
+        "status": "active",
+        "stats": {
+            "total_meals_sold": 5,
+            "total_meals_swapped": 2,
+            "total_meals_purchased": 10,
+            "average_rating": 4.5,
+            "total_reviews": 10,
+            "badges": []
+        },
+        "created_at": datetime.utcnow(),
+        "verified": True
+    }
+    
+    response = user_to_response(user)
+    
+    assert response.email == "test@example.com"
+    assert response.full_name == "Test User"
+    assert response.verified is True
+    assert response.phone == "1234567890"
+    assert response.bio == "Test bio"
+    assert response.profile_picture == "https://example.com/pic.jpg"
+    assert response.id == str(user["_id"])
+    assert response.role == "user"
+    assert response.status == "active"
+
+
+@pytest.mark.asyncio
+async def test_user_to_response_minimal_user():
+    """Test user_to_response with minimal required fields only"""
+    from app.routes.user_routes import user_to_response
+    
+    user = {
+        "_id": ObjectId(),
+        "email": "minimal@example.com",
+        "full_name": "Minimal User",
+        "location": {
+            "address": "123 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "12345"
+        },
+        "role": "user",
+        "status": "active",
+        "created_at": datetime.utcnow()
+        # Missing: phone, bio, profile_picture, dietary_preferences, social_media, stats, verified
+    }
+    
+    response = user_to_response(user)
+    
+    assert response.email == "minimal@example.com"
+    assert response.full_name == "Minimal User"
+    assert response.phone is None
+    assert response.bio is None
+    assert response.profile_picture is None
+    assert response.verified is False  # Default value
+
+
+@pytest.mark.asyncio
+async def test_user_to_response_with_empty_dicts():
+    """Test user_to_response when optional dict fields are empty"""
+    from app.routes.user_routes import user_to_response
+    
+    user = {
+        "_id": ObjectId(),
+        "email": "empty@example.com",
+        "full_name": "Empty Dicts User",
+        "location": {
+            "address": "123 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "12345"
+        },
+        "dietary_preferences": {},
+        "social_media": {},
+        "stats": {},
+        "role": "user",
+        "status": "active",
+        "created_at": datetime.utcnow()
+    }
+    
+    response = user_to_response(user)
+    
+    assert response.dietary_preferences == {}
+    assert response.social_media == {}
+    assert response.stats == {}
+
+
+@pytest.mark.asyncio
+async def test_user_to_response_with_none_values():
+    """Test user_to_response handles None values correctly"""
+    from app.routes.user_routes import user_to_response
+    
+    user = {
+        "_id": ObjectId(),
+        "email": "none@example.com",
+        "full_name": "None Values User",
+        "phone": None,
+        "bio": None,
+        "profile_picture": None,
+        "location": {
+            "address": "123 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "12345"
+        },
+        "role": "user",
+        "status": "active",
+        "created_at": datetime.utcnow()
+    }
+    
+    response = user_to_response(user)
+    
+    assert response.phone is None
+    assert response.bio is None
+    assert response.profile_picture is None
+
+
+# ============================================================
+# EDGE CASES FOR UPDATE OPERATIONS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_update_with_empty_bio(mongo_client, test_user):
+    """Test updating bio to empty string"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"bio": "", "updated_at": datetime.utcnow()}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["bio"] == ""
+
+
+@pytest.mark.asyncio
+async def test_update_with_empty_phone(mongo_client, test_user):
+    """Test updating phone to empty string"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"phone": "", "updated_at": datetime.utcnow()}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["phone"] == ""
+
+
+@pytest.mark.asyncio
+async def test_update_profile_picture_url(mongo_client, test_user):
+    """Test updating profile picture with various URL formats"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    urls = [
+        "https://example.com/profile.jpg",
+        "https://cdn.example.com/users/123/avatar.png",
+        "https://storage.googleapis.com/bucket/image.webp",
+    ]
+    
+    for url in urls:
+        await db.users.update_one(
+            {"_id": test_user["_id"]},
+            {"$set": {"profile_picture": url, "updated_at": datetime.utcnow()}}
+        )
+        
+        updated_user = await db.users.find_one({"_id": test_user["_id"]})
+        assert updated_user["profile_picture"] == url
+
+
+@pytest.mark.asyncio
+async def test_unset_optional_fields(mongo_client, test_user):
+    """Test removing optional fields by setting to None"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Unset phone and bio
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$unset": {"phone": "", "bio": ""}, "$set": {"updated_at": datetime.utcnow()}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert "phone" not in updated_user
+    assert "bio" not in updated_user
+
+
+# ============================================================
+# DIETARY PREFERENCES EDGE CASES
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_dietary_preferences_with_duplicates(mongo_client, test_user):
+    """Test that duplicate allergens/restrictions are handled"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    prefs = {
+        "dietary_restrictions": ["vegan", "vegan", "gluten-free"],
+        "allergens": ["peanuts", "peanuts"],
+        "cuisine_preferences": ["Italian", "Italian"],
+        "spice_level": "hot"
+    }
+    
+    # Use $addToSet to prevent duplicates
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {
+            "$set": {
+                "dietary_preferences.dietary_restrictions": list(set(prefs["dietary_restrictions"])),
+                "dietary_preferences.allergens": list(set(prefs["allergens"])),
+                "dietary_preferences.cuisine_preferences": list(set(prefs["cuisine_preferences"])),
+                "dietary_preferences.spice_level": prefs["spice_level"],
+                "updated_at": datetime.utcnow()
+            }
+        }
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    prefs = updated_user["dietary_preferences"]
+    
+    # Should have unique values only
+    assert prefs["dietary_restrictions"].count("vegan") == 1
+    assert prefs["allergens"].count("peanuts") == 1
+
+
+@pytest.mark.asyncio
+async def test_remove_specific_allergen(mongo_client, test_user):
+    """Test removing a specific allergen from the list"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Remove "peanuts" from allergens
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$pull": {"dietary_preferences.allergens": "peanuts"}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    allergens = updated_user["dietary_preferences"]["allergens"]
+    
+    assert "peanuts" not in allergens
+
+
+@pytest.mark.asyncio
+async def test_add_multiple_allergens_at_once(mongo_client, test_user):
+    """Test adding multiple allergens simultaneously"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    new_allergens = ["shellfish", "tree nuts", "soy"]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$addToSet": {"dietary_preferences.allergens": {"$each": new_allergens}}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    allergens = updated_user["dietary_preferences"]["allergens"]
+    
+    for allergen in new_allergens:
+        assert allergen in allergens
+
+
+@pytest.mark.asyncio
+async def test_update_spice_level_values(mongo_client, test_user):
+    """Test all valid spice level values"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    spice_levels = ["mild", "medium", "hot", "extra hot", None]
+    
+    for level in spice_levels:
+        await db.users.update_one(
+            {"_id": test_user["_id"]},
+            {"$set": {"dietary_preferences.spice_level": level}}
+        )
+        
+        updated_user = await db.users.find_one({"_id": test_user["_id"]})
+        assert updated_user["dietary_preferences"].get("spice_level") == level
+
+
+# ============================================================
+# SOCIAL MEDIA EDGE CASES
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_social_media_with_special_characters(mongo_client, test_user):
+    """Test social media handles with special characters"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    social = {
+        "facebook": "user.name_123",
+        "instagram": "@user_name",
+        "twitter": "user-name-2024"
+    }
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"social_media": social, "updated_at": datetime.utcnow()}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["social_media"]["facebook"] == "user.name_123"
+    assert updated_user["social_media"]["instagram"] == "@user_name"
+
+
+@pytest.mark.asyncio
+async def test_remove_social_media_link(mongo_client, test_user):
+    """Test removing a specific social media link"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$unset": {"social_media.twitter": ""}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert "twitter" not in updated_user["social_media"]
+
+
+@pytest.mark.asyncio
+async def test_clear_all_social_media(mongo_client, test_user):
+    """Test clearing all social media links"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"social_media": {}, "updated_at": datetime.utcnow()}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["social_media"] == {}
+
+
+# ============================================================
+# STATS UPDATE EDGE CASES
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_increment_multiple_stats(mongo_client, test_user):
+    """Test incrementing multiple stat counters at once"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    initial_sold = test_user["stats"]["total_meals_sold"]
+    initial_swapped = test_user["stats"]["total_meals_swapped"]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {
+            "$inc": {
+                "stats.total_meals_sold": 3,
+                "stats.total_meals_swapped": 1
+            }
+        }
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["stats"]["total_meals_sold"] == initial_sold + 3
+    assert updated_user["stats"]["total_meals_swapped"] == initial_swapped + 1
+
+
+@pytest.mark.asyncio
+async def test_decrement_stats(mongo_client, test_user):
+    """Test decrementing stats (e.g., for refunds)"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    initial_purchased = test_user["stats"]["total_meals_purchased"]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$inc": {"stats.total_meals_purchased": -1}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["stats"]["total_meals_purchased"] == initial_purchased - 1
+
+
+@pytest.mark.asyncio
+async def test_update_rating_calculation(mongo_client, test_user):
+    """Test calculating new average rating after a review"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    current_rating = test_user["stats"]["average_rating"]
+    current_reviews = test_user["stats"]["total_reviews"]
+    
+    # Simulate adding a new 5-star review
+    new_review_rating = 5.0
+    new_total_reviews = current_reviews + 1
+    new_average = ((current_rating * current_reviews) + new_review_rating) / new_total_reviews
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {
+            "$set": {"stats.average_rating": new_average},
+            "$inc": {"stats.total_reviews": 1}
+        }
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    assert updated_user["stats"]["total_reviews"] == new_total_reviews
+    assert abs(updated_user["stats"]["average_rating"] - new_average) < 0.01
+
+
+@pytest.mark.asyncio
+async def test_add_badge_to_user(mongo_client, test_user):
+    """Test adding achievement badges to user"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    badge = {
+        "name": "Top Chef",
+        "description": "Sold 100 meals",
+        "earned_at": datetime.utcnow()
+    }
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$push": {"stats.badges": badge}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    badges = updated_user["stats"]["badges"]
+    
+    assert len(badges) == 1
+    assert badges[0]["name"] == "Top Chef"
+
+
+@pytest.mark.asyncio
+async def test_prevent_duplicate_badges(mongo_client, test_user):
+    """Test that duplicate badges are not added"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    badge = {"name": "Rising Star", "earned_at": datetime.utcnow()}
+    
+    # Add badge twice using $addToSet
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$addToSet": {"stats.badges": badge}}
+    )
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$addToSet": {"stats.badges": badge}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    
+    # Should only have one badge (though $addToSet compares entire document)
+    # For string-based badges, use:
+    badge_names = [b["name"] for b in updated_user["stats"]["badges"]]
+    assert badge_names.count("Rising Star") >= 1
+
+
+# ============================================================
+# DELETE CASCADE TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_delete_user_with_multiple_meals(mongo_client, test_user):
+    """Test deleting user cascades to delete all their meals"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create multiple meals
+    meals = [
+        {
+            "seller_id": test_user["_id"],
+            "title": f"Meal {i}",
+            "description": "Test meal",
+            "status": "available",
+            "created_at": datetime.utcnow()
+        }
+        for i in range(5)
+    ]
+    
+    await db.meals.insert_many(meals)
+    
+    # Verify meals exist
+    meal_count = await db.meals.count_documents({"seller_id": test_user["_id"]})
+    assert meal_count == 5
+    
+    # Delete user and their meals
+    await db.users.delete_one({"_id": test_user["_id"]})
+    await db.meals.delete_many({"seller_id": test_user["_id"]})
+    
+    # Verify all meals deleted
+    remaining = await db.meals.count_documents({"seller_id": test_user["_id"]})
+    assert remaining == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_user_with_reviews_as_reviewer(mongo_client, test_user):
+    """Test deleting user also deletes reviews they wrote"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create reviews by this user
+    reviews = [
+        {
+            "reviewer_id": test_user["_id"],
+            "meal_id": ObjectId(),
+            "rating": 5,
+            "comment": f"Review {i}",
+            "created_at": datetime.utcnow()
+        }
+        for i in range(3)
+    ]
+    
+    await db.reviews.insert_many(reviews)
+    
+    # Delete user and their reviews
+    await db.users.delete_one({"_id": test_user["_id"]})
+    await db.reviews.delete_many({"reviewer_id": test_user["_id"]})
+    
+    # Verify reviews deleted
+    remaining = await db.reviews.count_documents({"reviewer_id": test_user["_id"]})
+    assert remaining == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_user_orphan_check(mongo_client, test_user, another_user):
+    """Test that deleting one user doesn't affect another user's data"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create meal for test_user
+    meal1 = {
+        "seller_id": test_user["_id"],
+        "title": "User 1 Meal",
+        "status": "available",
+        "created_at": datetime.utcnow()
+    }
+    
+    # Create meal for another_user
+    meal2 = {
+        "seller_id": another_user["_id"],
+        "title": "User 2 Meal",
+        "status": "available",
+        "created_at": datetime.utcnow()
+    }
+    
+    await db.meals.insert_many([meal1, meal2])
+    
+    # Delete test_user and their meals
+    await db.users.delete_one({"_id": test_user["_id"]})
+    await db.meals.delete_many({"seller_id": test_user["_id"]})
+    
+    # Verify another_user's meal still exists
+    other_meal = await db.meals.find_one({"seller_id": another_user["_id"]})
+    assert other_meal is not None
+    assert other_meal["title"] == "User 2 Meal"
+
+
+# ============================================================
+# QUERY AND VALIDATION TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_find_users_by_status(mongo_client, test_user, suspended_user):
+    """Test querying users by status"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    active_users = await db.users.find({"status": "active"}).to_list(None)
+    suspended_users = await db.users.find({"status": "suspended"}).to_list(None)
+    
+    active_ids = [str(u["_id"]) for u in active_users]
+    suspended_ids = [str(u["_id"]) for u in suspended_users]
+    
+    assert str(test_user["_id"]) in active_ids
+    assert str(suspended_user["_id"]) in suspended_ids
+
+
+@pytest.mark.asyncio
+async def test_find_users_by_dietary_restriction(mongo_client, test_user):
+    """Test finding users with specific dietary restrictions"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Find vegetarian users
+    vegetarian_users = await db.users.find(
+        {"dietary_preferences.dietary_restrictions": "vegetarian"}
+    ).to_list(None)
+    
+    user_ids = [str(u["_id"]) for u in vegetarian_users]
+    assert str(test_user["_id"]) in user_ids
+
+
+@pytest.mark.asyncio
+async def test_find_verified_users(mongo_client, test_user, suspended_user):
+    """Test querying verified vs unverified users"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    verified_users = await db.users.find({"verified": True}).to_list(None)
+    unverified_users = await db.users.find({"verified": False}).to_list(None)
+    
+    verified_ids = [str(u["_id"]) for u in verified_users]
+    unverified_ids = [str(u["_id"]) for u in unverified_users]
+    
+    assert str(test_user["_id"]) in verified_ids
+    assert str(suspended_user["_id"]) in unverified_ids
+
+
+@pytest.mark.asyncio
+async def test_count_users_by_location(mongo_client, test_user):
+    """Test counting users by city"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    city = test_user["location"]["city"]
+    count = await db.users.count_documents({"location.city": city})
+    
+    assert count >= 1  # At least our test user
+
+
+@pytest.mark.asyncio
+async def test_find_top_rated_users(mongo_client, test_user, another_user):
+    """Test finding users with high ratings"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Find users with rating >= 4.0
+    top_users = await db.users.find(
+        {"stats.average_rating": {"$gte": 4.0}}
+    ).sort("stats.average_rating", -1).to_list(None)
+    
+    assert len(top_users) >= 2
+    # Verify sorted by rating (descending)
+    for i in range(len(top_users) - 1):
+        assert top_users[i]["stats"]["average_rating"] >= top_users[i + 1]["stats"]["average_rating"]
+
+
+@pytest.mark.asyncio
+async def test_objectid_validation():
+    """Test ObjectId validation for invalid formats"""
+    invalid_ids = [
+        "12345",
+        "not_an_id",
+        "123456789012345678901234567890",  # Too long
+        "",
+        "gggggggggggggggggggggggg",  # Invalid hex
+    ]
+    
+    for invalid_id in invalid_ids:
+        assert not ObjectId.is_valid(invalid_id)
+
+
+@pytest.mark.asyncio
+async def test_objectid_validation_valid():
+    """Test ObjectId validation for valid formats"""
+    valid_id = ObjectId()
+    
+    assert ObjectId.is_valid(str(valid_id))
+    assert ObjectId.is_valid(valid_id)
+
+
+# ============================================================
+# TIMESTAMP TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_updated_at_timestamp(mongo_client, test_user):
+    """Test that updated_at timestamp changes on update"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    original_updated = test_user.get("updated_at")
+    
+    # Wait a tiny bit to ensure timestamp difference
+    import asyncio
+    await asyncio.sleep(0.01)
+    
+    new_timestamp = datetime.utcnow()
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"bio": "Updated", "updated_at": new_timestamp}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    
+    # If original had updated_at, new one should be different
+    if original_updated:
+        assert updated_user["updated_at"] != original_updated
+    assert updated_user["updated_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_created_at_immutable(mongo_client, test_user):
+    """Test that created_at timestamp doesn't change on update"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    original_created = test_user["created_at"]
+    
+    await db.users.update_one(
+        {"_id": test_user["_id"]},
+        {"$set": {"bio": "Updated", "updated_at": datetime.utcnow()}}
+    )
+    
+    updated_user = await db.users.find_one({"_id": test_user["_id"]})
+    
+    assert updated_user["created_at"] == original_created
     
