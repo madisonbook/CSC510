@@ -1,8 +1,41 @@
+/* eslint-disable no-unused-vars */
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Textarea } from './ui/textarea';
+import { useState, useEffect } from "react";
+import { Star } from "lucide-react";
+import { Label } from './ui/label';
+import MealCard from "./MealCard";
 
-export default function CheckoutTab({ cart, onRemoveFromCart }) {
+export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRate, onReport }) {
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [reportingMeal, setReportingMeal] = useState(null);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [ratingValue, setRatingValue] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [mealToRemove, setMealToRemove] = useState(null);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+
+  const handleRemoveClick = (meal) => {
+    setMealToRemove(meal);
+    setRemoveDialogOpen(true);
+  };
+
+  const handleConfirmRemove = () => {
+    if (mealToRemove) {
+      onRemoveFromCart(mealToRemove.id);
+      setMealToRemove(null);
+      setRemoveDialogOpen(false);
+    }
+  };
+
+
+  // if no items in cart
   if (!cart.length) {
     return (
       <div className="text-center py-12 space-y-4">
@@ -12,40 +45,174 @@ export default function CheckoutTab({ cart, onRemoveFromCart }) {
     );
   }
 
+  // meal price range  
+  function mapPriceToLevel(price) {
+    if (price <= 20) return "1";       
+    if (price <= 40) return "2";      
+    if (price <= 60) return "3";       
+  return "4";                        
+}
+
+  // render meal price range in $
+  function renderPriceLevel(price) {
+    const level = mapPriceToLevel(price);
+    const color =
+      level === "1"
+        ? "text-[#D9A299]"
+        : level === "2"
+        ? "text-[#C2857F]"
+        : level === "3"
+        ? "text-[#A86A66]"
+        : "text-[#8F5250]";
+
+    return <span className={`font-semibold ${color}`}>{"$".repeat(level)}</span>;
+  }
+
+    // show meal star rating
+    const renderStars = (rating = 0, interactive = false, onRatingChange) => (
+    <div className="flex items-center space-x-1">
+      {[1, 2, 3, 4, 5].map(star => (
+        <Star
+          key={star}
+          className={`w-4 h-4 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${interactive ? 'cursor-pointer hover:text-yellow-400' : ''}`}
+          onClick={interactive && onRatingChange ? () => onRatingChange(star) : undefined}
+        />
+      ))}
+      <span className="ml-2 text-sm text-muted-foreground">{rating.toFixed(1)}</span>
+    </div>
+  );
+
   // calculate total price
   const totalPrice = cart.reduce((sum, meal) => sum + Number(meal.sale_price), 0);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <h2 className="text-xl sm:text-2xl">Your Meal Cart</h2>
+    <div className="grid gap-4 sm:gap-6">
+      {/** show meal card with info */}
+      {cart.map(meal => (
+        <MealCard
+          key={meal.id}
+          meal={meal}
+          onRate={true}
+          onReport={true}
+          userRatings={userRatings}
+          renderStars={renderStars}
+          renderPriceLevel={renderPriceLevel}
+          onRemoveFromCart={handleRemoveClick}
+          showAddToCart={false}
+          showRemoveFromCart={true}
+          setSelectedMeal={setSelectedMeal}
+          setReportingMeal={setReportingMeal}
+          setReportDialogOpen={setReportDialogOpen}
+        />
+      ))}
 
-      <div className="grid gap-4 sm:gap-6">
-        {cart.map((meal) => (
-          <Card key={meal.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle>{meal.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-between items-center">
-              <span>${meal.sale_price}</span>
-              <Button
-                size="sm"
-                variant="destructive-outline"
-                className="cursor-pointer mt-3 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
-                onClick={() => onRemoveFromCart(meal.id)}
-              >
-                Remove
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* total price & checkout section */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-8 p-4 border-t border-gray-200">
+        <h3 className="text-lg font-semibold">
+          Total: <span className="text-[#D9A299]">${totalPrice.toFixed(2)}</span>
+        </h3>
 
-      <div className="flex justify-end items-center space-x-4 mt-4">
-        <span className="font-semibold text-lg">Total: ${totalPrice.toFixed(2)}</span>
-        <Button size="sm" variant="primary" className="cursor-pointer bg-[#D9A299] hover:bg-[#d18e82] text-white px-4 py-2 rounded-lg">
-          Checkout
+        <Button
+          className="mt-3 sm:mt-0 bg-[#D9A299] hover:bg-[#c58c82] text-white px-6 py-2 rounded-lg"
+          onClick={() => alert('Checkout feature coming soon!')}
+        >
+          Proceed to Checkout
         </Button>
       </div>
-    </div>
+
+
+      {/** enable rating & reporting a meal */}
+      {selectedMeal && (
+        <Dialog open={!!selectedMeal} onOpenChange={(open) => { if (!open) setSelectedMeal(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rate {selectedMeal.name}</DialogTitle>
+              <DialogDescription>Provide a rating and review for this meal</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Rating</Label>
+                {renderStars(ratingValue, true, setRatingValue)}
+              </div>
+
+              <div>
+                <Label>Review</Label>
+                <Textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Write your review..." />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setSelectedMeal(null)}>Cancel</Button>
+                <Button onClick= {() => {onRate(selectedMeal, ratingValue, reviewText);
+            setSelectedMeal(null);}}>Submit</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <AlertDialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Report {reportingMeal?.name}</AlertDialogTitle>
+            <AlertDialogDescription>Please select a reason and provide any additional details.</AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Reason</Label>
+              <Select value={reportReason} onValueChange={setReportReason}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Caused Illness">Caused Illness</SelectItem>
+                  <SelectItem value="Spoiled">Spoiled</SelectItem>
+                  <SelectItem value="Unhygienic">Unhygienic</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Details</Label>
+              <Textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} placeholder="Additional details (optional)" />
+            </div>
+
+            <AlertDialogFooter className="flex justify-end gap-2">
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+          onReport(reportingMeal, reportReason, reportDetails);
+          setReportDialogOpen(false);
+        }}>Submit Report</AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
+      {/* Remove Confirmation Dialog */}
+      {mealToRemove && (
+        <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove from Cart</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove {mealToRemove.title} from your cart?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex justify-end gap-2">
+              <AlertDialogCancel onClick={() => setRemoveDialogOpen(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmRemove
+              }>
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+  </div>
+
   );
 }

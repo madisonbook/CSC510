@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 import { useEffect, useState } from 'react';
 import { getAllMeals } from '../services/MealService';
@@ -80,6 +81,11 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   // add meals to cart
   const handleAddToCart = (meal) => {
     console.log("Added to cart: ", meal.title);
+    setCart(prev => {
+    const updated = [...prev, meal];
+    localStorage.setItem('cart', JSON.stringify(updated));
+    return updated;
+  });
   }
 
 

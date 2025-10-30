@@ -21,7 +21,6 @@ export default function Dashboard({ onLogout }) {
   const [error, setError] = useState(null);
   const backendURL = "http://localhost:8000";
   const navigate = useNavigate();
-  const [cart, setCart] = useState([]);
   
   const userId = localStorage.getItem("userId");
   const userEmail = localStorage.getItem("email");
@@ -155,6 +154,17 @@ export default function Dashboard({ onLogout }) {
   const handleDeleteMeal = (mealId) => {
     setMyMeals(prev => prev.filter(m => m.id !== mealId));
   };
+
+  // initialize cart from localStorage
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem("cart");
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
+
 
   // add meal to cart
   const handleAddToCart = (meal) => {

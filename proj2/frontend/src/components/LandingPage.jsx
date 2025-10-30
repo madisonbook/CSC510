@@ -26,6 +26,8 @@ function LandingPage({ onAuthSuccess }) {
   const [profilePicture, setProfilePicture] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [showResend, setShowResend] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
   const backendURL = "http://localhost:8000";
 
   const handleLogin = async (e) => {
@@ -57,17 +59,21 @@ function LandingPage({ onAuthSuccess }) {
         );
 
         if (resend){
-          const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}`, {
+          try {
+            const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}&account_type=user`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: loginEmail }),
           });
-
-          const resendData = await resendResponse.json();
-          if (resendResponse.ok) {
-            alert(resendData.message || "Verification email sent successfully. Please check your inbox.");
-          } else {
-            alert(resendData.detail || "Failed to send verification email.");
+          
+            const resendData = await resendResponse.json();
+          
+            if (resendResponse.ok) {
+              alert(resendData.message || "Verification email sent successfully. Please check your inbox.");
+            } else {
+              alert(resendData.detail || "Failed to send verification email.");
+            }
+          } catch (resendError) {
+            console.error("Resend error: ", resendError);
+            alert("Error sending verification email. Please try again.");
           }
         }
       } else {

@@ -80,7 +80,7 @@ export default function MyMealsTab({ userLocation }) {
       cuisine_type: formData.cuisine.replace(/^[^\w]+/, ""),
       meal_type: "Lunch",
       photos: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"],
-      portion_size: `${formData.servings} servings`,
+      portion_size: `${formData.servings}`,
       available_for_sale: true,
       sale_price: parseFloat(formData.price) || 0,
       available_for_swap: formData.isSwapAvailable,
@@ -501,7 +501,7 @@ export default function MyMealsTab({ userLocation }) {
                         <span>{meal.cuisine_type}</span>
                         <div className="flex items-center space-x-1"><DollarSign className="w-3 h-3 shrink-0" /><span>${meal.sale_price}</span></div>
                         <div className="flex items-center space-x-1"><MapPin className="w-3 h-3 shrink-0" /><span>{meal.pickup_instructions}</span></div>
-                        <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size}</span></div>
+                        <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size} servings</span></div>
                       </div> 
                     <CardDescription className="text-sm sm:text-base">{meal.description}</CardDescription>
                 </CardHeader>
