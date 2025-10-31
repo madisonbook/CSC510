@@ -1,7 +1,10 @@
+/* eslint-disable no-unused-vars */
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
 import { Clock, User2, MapPin, Package, Heart } from "lucide-react";
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
 
 export default function MealCard({
   meal,
@@ -15,9 +18,15 @@ export default function MealCard({
   setReportingMeal,
   setReportDialogOpen,
   onRemoveFromCart,
-  showRemoveFromCart
+  showRemoveFromCart,
+  showSwapButton,
+  onSwapClick,
+  onUpdateSwap,
+  selectedSwapMeal
 }) 
 {
+
+  const displayedSwapMeal = selectedSwapMeal || meal.selectedSwapMeal;
 
   return (
     // construction of meal card with all specific info
@@ -130,16 +139,48 @@ export default function MealCard({
                     </Button>
                   )}
 
-                  {showRemoveFromCart && onRemoveFromCart && (
-                    <Button
-                      size="sm"
-                      variant="destructive-outline"
-                      className="cursor-pointer mt-3 bg-[#dc3545] hover:bg-red-600 text-white px-4 py-4 rounded-lg"
-                      onClick={() => onRemoveFromCart(meal)}
-                    >
-                      Remove from Cart
-                    </Button>
-                  )}
+
+
+              {showSwapButton && meal.available_for_swap && (
+              <div className="flex items-center gap-2 mt-2">
+                <Switch
+                  size="sm"
+                  variant="outline"
+                  checked={!!meal.selectedSwapMeal}
+                  onCheckedChange={(checked) => {
+                  if (checked) {
+                    // open swap dialog to select a meal
+                    onSwapClick(meal);
+
+                  } else {
+                    // remove swap
+                    onUpdateSwap(meal.id, null);
+                  }
+                  }}
+                  className="cursor-pointer bg-blue-100 text-blue-800 hover:bg-blue-200"
+                />
+                <span
+                  className="text-sm font-medium cursor-pointer"
+                  onClick={() => onSwapClick(meal)}
+                >
+                  {displayedSwapMeal
+                  ? `Swapping with ${meal.selectedSwapMeal.title}`
+                  : "Swap Meal"}
+                </span>
+              </div>
+              )}
+
+              {/** remove from cart button */}
+              {showRemoveFromCart && (
+                <Button
+                  variant="destructive"
+                  className="mt-2"
+                  onClick={() => onRemoveFromCart(meal)}
+                >
+                  Remove
+                </Button>
+              )}
+
 
                   {onRate && (
                     <Button

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 
 
-export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation, addToCart }) {
+export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation, addToCart, currentUserId }) {
   const [meals, setMeals] = useState([]);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [filteredMeals, setFilteredMeals] = useState([]);
@@ -56,11 +56,12 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   return <span className={`font-semibold ${color}`}>{"$".repeat(level)}</span>;
 }
 
-  // filter meals based on preferences
+  // filter meals based on preferences & remove user's own meals
   useEffect(() => {
     if (!meals.length || !preferences) return;
 
     const filtered = meals.filter((meal) => {
+      if (meal.seller_id === currentUserId) return false;
       const cuisineMatch = !(preferences?.cuisines?.length) || preferences.cuisines.includes(meal.cuisine_type);
       const allergenMatch = !meal.allergens?.some(a => preferences?.allergens?.includes(a));
       const priceLevel = mapPriceToLevel(Number(meal.sale_price));
@@ -76,7 +77,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     console.log('Filtered meals:', filtered);
 
     setFilteredMeals(filtered);
-  }, [meals, preferences]);
+  }, [meals, preferences, currentUserId]);
 
   // add meals to cart
   const handleAddToCart = (meal) => {
@@ -87,7 +88,6 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     return updated;
   });
   }
-
 
   const handleReport = () => {
     if (!reportReason) {

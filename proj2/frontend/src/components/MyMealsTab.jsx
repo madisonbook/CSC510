@@ -795,6 +795,7 @@ export default function MyMealsTab({ userLocation }) {
                 setIsDeleteOpen(false); // close the dialog
                 setMealToDelete(null);  // reset the state
               }}
+              className="bg-[#dc3545]"
             >
               Delete
             </Button>

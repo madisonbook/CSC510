@@ -182,6 +182,18 @@ export default function Dashboard({ onLogout }) {
 
   const clearCart = () => setCart([]);
 
+  // swap meal
+  const handleSwapMeal = (mealId, selectedSwapMeal) => {
+  const updatedCart = cart.map((item) =>
+    item.id === mealId ? { ...item, selectedSwapMeal } : item
+  );
+  setCart(updatedCart); // React state updates instantly
+  localStorage.setItem("cart", JSON.stringify(updatedCart)); // optional persistence
+};
+
+  // get meal ids of meals that are already swapped as they should not be an option to swap again
+  const swappedMealIds = cart.filter(item => item.selectedSwapMeal).map(item => item.selectedSwapMeal.id);
+
   // user ratings
   const getTotalRatings = () => Object.keys(userRatings).length;
 
@@ -314,6 +326,7 @@ export default function Dashboard({ onLogout }) {
               onRateRestaurant={handleRateRestaurant}
               userLocation={preferences.userLocation}
               addToCart={handleAddToCart}
+              currentUserId={userId}
             />
           </TabsContent>
 
@@ -358,7 +371,14 @@ export default function Dashboard({ onLogout }) {
           </TabsContent>
 
           <TabsContent value="cart">
-            <CartTab cart={cart} onRemoveFromCart={handleRemoveFromCart} />
+            <CartTab 
+              cart={cart} 
+              onRemoveFromCart={handleRemoveFromCart} 
+              handleSwapMeal={handleSwapMeal}
+              onUpdateSwap={handleSwapMeal}
+              swappedMealIds={swappedMealIds}
+              clearCart={clearCart}
+            />
           </TabsContent>
         </Tabs>
       </main>
