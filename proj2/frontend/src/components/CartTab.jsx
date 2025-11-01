@@ -52,7 +52,9 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
   const handleCloseConfirmation = () => {
     setCheckoutDialogOpen(false);
     setOrderConfirmed(false);
+    console.log("Cart before clearing:", cart);
     clearCart?.(); // now we clear the cart
+    console.log("Cleared!");
   };
 
   // short cart summary for checkout
@@ -223,7 +225,10 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => handleConfirmCheckout()} 
+                onClick={(e) => {
+                  e.preventDefault(); // prevent AlertDialog from auto-closing
+                  handleConfirmCheckout();
+                }} 
               >
                 Confirm
               </AlertDialogAction>
