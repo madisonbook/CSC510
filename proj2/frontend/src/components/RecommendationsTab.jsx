@@ -23,6 +23,8 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reportingMeal, setReportingMeal] = useState(null);
+  const [selectedSeller, setSelectedSeller] = useState(null);
+  const [sellerDialogOpen, setSellerDialogOpen] = useState(false);
 
   // fetch meals
   useEffect(() => {
@@ -71,7 +73,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
       return cuisineMatch && allergenMatch && priceMatch;
     });
 
-    // Debug logs
+    // debug logs
     console.log('Meals before filtering:', meals);
     console.log('Preferences:', preferences);
     console.log('Filtered meals:', filtered);
@@ -89,6 +91,20 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   });
   }
 
+  // fetch seller info by id
+  const handleViewSeller = async (seller_id) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${seller_id}`);
+      if (!response.ok) throw new Error("Failed to fetch seller info");
+      const data = await response.json();
+      setSelectedSeller(data);
+      setSellerDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching seller info: ", error);
+    }
+  };
+
+  // handle reporting & rating
   const handleReport = () => {
     if (!reportReason) {
       alert('Please select a reason for reporting');
@@ -110,6 +126,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     }
   };
 
+  // render stars for rating
   const renderStars = (rating = 0, interactive = false, onRatingChange) => (
     <div className="flex items-center space-x-1">
       {[1, 2, 3, 4, 5].map(star => (
@@ -123,6 +140,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     </div>
   );
 
+  // if no meals match preferences
   if (!filteredMeals.length) {
     return (
       <div className="text-center py-12 space-y-4">
@@ -164,7 +182,10 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                         {userRatings[meal.id] && <Heart className="w-4 h-4 fill-red-500 text-red-500 shrink-0" />}
                       </CardTitle>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1"><User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span></div>
+                        <div className="flex items-center space-x-1 cursor-pointer hover:underline text-[#A86A66]"
+                          onClick={() => handleViewSeller(meal.seller_id)}>
+                            <User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span>
+                        </div>
                         <span>{meal.cuisine_type}</span>
                         <div className="flex items-center space-x-1"><span>{renderPriceLevel(meal.sale_price)}</span><span>${meal.sale_price}</span></div>
                         <div className="flex items-center space-x-1"><MapPin className="w-3 h-3 shrink-0" /><span>{meal.distance} mi away</span></div>
@@ -288,6 +309,42 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/** seller info dialog box */}
+      <Dialog open={sellerDialogOpen} onOpenChange={setSellerDialogOpen}>
+        <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{selectedSeller?.name || "Seller Info"}</DialogTitle>
+          <DialogDescription>Learn more about this seller</DialogDescription>
+        </DialogHeader>
+
+      {selectedSeller ? (
+        <div className="space-y-3">
+          <p><strong>Seller:</strong> {selectedSeller.full_name || "No name available."}</p>
+          <p><strong>Bio:</strong> {selectedSeller.bio || "No bio available."}</p>
+          <p><strong>Social Media:</strong> 
+            {selectedSeller.social_media?.facebook && ` FB: ${selectedSeller.social_media.facebook}`}
+            {selectedSeller.social_media?.instagram && ` IG: ${selectedSeller.social_media.instagram}`}
+            {selectedSeller.social_media?.twitter && ` TW: ${selectedSeller.social_media.twitter}`}
+          </p>
+          {selectedSeller.profile_picture && (
+            <img
+              src={selectedSeller.profile_picture}
+              alt={`${selectedSeller.name}'s profile`}
+              className="w-32 h-32 object-cover rounded-full border"
+            />
+          )}
+        </div>
+      ) : (
+        <p>Loading seller info...</p>
+      )}
+
+      <div className="flex justify-end mt-4">
+        <Button className="cursor-pointer" onClick={() => setSellerDialogOpen(false)}>Close</Button>
+      </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

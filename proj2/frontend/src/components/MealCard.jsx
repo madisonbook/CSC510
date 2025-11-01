@@ -1,5 +1,8 @@
 /* eslint-disable no-unused-vars */
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Clock, User2, MapPin, Package, Heart } from "lucide-react";
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -27,9 +30,28 @@ export default function MealCard({
 {
 
   const displayedSwapMeal = selectedSwapMeal || meal.selectedSwapMeal;
+  const [selectedSeller, setSelectedSeller] = useState(null);
+  const [sellerDialogOpen, setSellerDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [messageText, setMessageText] = useState("");
+
+
+  // fetch seller info by id
+  const handleViewSeller = async (seller_id) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${seller_id}`);
+      if (!response.ok) throw new Error("Failed to fetch seller info");
+      const data = await response.json();
+      setSelectedSeller(data);
+      setSellerDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching seller info: ", error);
+    }
+  };
 
   return (
-    // construction of meal card with all specific info
+    <>
+    {/** construction of meal card with all specific info */}
     <Card key={meal.id} className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="flex flex-col md:flex-row">
         <div className="w-full md:w-64 h-48 md:h-auto relative overflow-hidden">
@@ -62,9 +84,9 @@ export default function MealCard({
                   )}
                 </CardTitle>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-1">
-                    <User2 className="w-3 h-3 shrink-0" />
-                    <span>{meal.seller_name}</span>
+                  <div className="flex items-center space-x-1 cursor-pointer hover:underline text-[#A86A66]"
+                    onClick={() => handleViewSeller(meal.seller_id)}>
+                        <User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span>
                   </div>
                   <span>{meal.cuisine_type}</span>
                   <div className="flex items-center space-x-1">
@@ -140,7 +162,6 @@ export default function MealCard({
                   )}
 
 
-
               {showSwapButton && meal.available_for_swap && (
               <div className="flex items-center gap-2 mt-2">
                 <Switch
@@ -170,18 +191,27 @@ export default function MealCard({
               </div>
               )}
 
+              {/** message seller button */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="cursor-pointer mt-2"
+                onClick={() => setMessageDialogOpen(true)}
+              >
+                Message Seller
+              </Button>
+
+
               {/** remove from cart button */}
               {showRemoveFromCart && (
                 <Button
                   variant="destructive"
-                  className="mt-2"
+                  className="cursor-pointer mt-1"
                   onClick={() => onRemoveFromCart(meal)}
                 >
                   Remove
                 </Button>
               )}
-
-
                   {onRate && (
                     <Button
                       size="sm"
@@ -210,8 +240,86 @@ export default function MealCard({
               </div>
             </div>
           </CardContent>
+ 
         </div>
       </div>
     </Card>
+
+
+      {/** seller info dialog box */}
+      <Dialog open={sellerDialogOpen} onOpenChange={setSellerDialogOpen}>
+        <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{selectedSeller?.name || "Seller Info"}</DialogTitle>
+          <DialogDescription>Learn more about this seller</DialogDescription>
+        </DialogHeader>
+
+      {selectedSeller ? (
+        <div className="space-y-3">
+          <p><strong>Seller:</strong> {selectedSeller.full_name || "No name available."}</p>
+          <p><strong>Bio:</strong> {selectedSeller.bio || "No bio available."}</p>
+          <p><strong>Social Media:</strong> 
+            {selectedSeller.social_media?.facebook && ` FB: ${selectedSeller.social_media.facebook}`}
+            {selectedSeller.social_media?.instagram && ` IG: ${selectedSeller.social_media.instagram}`}
+            {selectedSeller.social_media?.twitter && ` TW: ${selectedSeller.social_media.twitter}`}
+          </p>
+          {selectedSeller.profile_picture && (
+            <img
+              src={selectedSeller.profile_picture}
+              alt={`${selectedSeller.name}'s profile`}
+              className="w-32 h-32 object-cover rounded-full border"
+            />
+          )}
+        </div>
+      ) : (
+        <p>Loading seller info...</p>
+      )}
+
+      <div className="flex justify-end mt-4">
+        <Button className="cursor-pointer" onClick={() => setSellerDialogOpen(false)}>Close</Button>
+      </div>
+        </DialogContent>
+      </Dialog>
+
+
+      {/** message seller dialog box */}
+      <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Message {meal.seller_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <textarea
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+            placeholder="Write your message..."
+            className="w-full border p-2 rounded-md resize-none"
+            rows={4}
+          />
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            className="cursor-pointer"
+            onClick={() => setMessageDialogOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="cursor-pointer"
+            onClick={() => {
+              // send the message
+              console.log("Message sent to seller:", messageText);
+              setMessageText("");
+              setMessageDialogOpen(false);
+            }}
+          >
+            Send
+          </Button>
+        </div>
+        </div>
+        </DialogContent>
+      </Dialog>
+
+    </>
   );
 }

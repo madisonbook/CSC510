@@ -186,7 +186,7 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
         </h3>
 
         <Button
-          className="mt-3 sm:mt-0 bg-[#D9A299] hover:bg-[#c58c82] text-white px-6 py-2 rounded-lg"
+          className="cursor-pointer mt-3 sm:mt-0 bg-[#D9A299] hover:bg-[#c58c82] text-white px-6 py-2 rounded-lg"
           onClick={() => setCheckoutDialogOpen(true)}
           disabled={!cart.length}
         >
@@ -221,10 +221,11 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
               </div>
 
             <AlertDialogFooter className="flex justify-end gap-2 mt-4">
-              <AlertDialogCancel onClick={() => setCheckoutDialogOpen(false)}>
+              <AlertDialogCancel className="cursor-pointer" onClick={() => setCheckoutDialogOpen(false)}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
+                className="cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault(); // prevent AlertDialog from auto-closing
                   handleConfirmCheckout();
