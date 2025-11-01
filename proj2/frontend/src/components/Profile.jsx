@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // adjust your import
 import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 export default function Profile({ user, onUpdate }) {
   const navigate = useNavigate();
@@ -77,12 +78,12 @@ export default function Profile({ user, onUpdate }) {
       if (!res.ok) throw new Error("Failed to update profile");
 
       const updatedUser = await res.json();
-      alert("Profile updated!");
+      toast.success("Profile updated!");
       if (onUpdate) onUpdate(updatedUser);
       setIsEditing(false); 
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -97,12 +98,12 @@ export default function Profile({ user, onUpdate }) {
         },
       });
       if (!res.ok) throw new Error("Failed to delete account");
-      alert("Account deleted!");
+      toast.success("Account deleted!");
       localStorage.clear();
       navigate("/");
     } catch (err) {
       console.error(err);
-      alert("Error deleting account");
+      toast.error("Error deleting account");
     }
   };
 

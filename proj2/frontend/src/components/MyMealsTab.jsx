@@ -13,6 +13,7 @@ import { Switch } from './ui/switch';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Plus, MapPin, Clock, DollarSign, Trash2, Package } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 
 const COMMON_ALLERGENS = [
@@ -67,7 +68,7 @@ export default function MyMealsTab({ userLocation }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userLocation && !formData.pickupAddress) {
-      alert('Please add your location in Preferences or enter a pickup address');
+      toast.error('Please add your location in Preferences or enter a pickup address');
       return;
     }
 
@@ -118,7 +119,7 @@ export default function MyMealsTab({ userLocation }) {
     });
     } catch (error) {
       console.error("Error adding meal: ", error);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -129,7 +130,7 @@ export default function MyMealsTab({ userLocation }) {
       setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
     } catch (error) {
       console.error("Error deleting meal: ", error);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -154,7 +155,7 @@ export default function MyMealsTab({ userLocation }) {
   const handleSaveEdits = async (mealId) => {
     try {
       await updateMeal(mealId, formData);
-      console.log("Meal updated succesfully");
+      console.log("Meal updated succesfully!!");
       setEditMeal(null);
       // refresh meal list
       getMyMeals();
@@ -189,6 +190,7 @@ export default function MyMealsTab({ userLocation }) {
     try {
       await updateMeal(selectedMeal.id, updatePayload);
       console.log("Meal updated successfully");
+      toast.success("Meal updated")
       setIsEditOpen(false);
       const updatedMeals = await getMyMeals(); // refresh meal list
       setMeals(updatedMeals);

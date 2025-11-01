@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
-//import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 
 function LandingPage({ onAuthSuccess }) {
@@ -33,7 +33,7 @@ function LandingPage({ onAuthSuccess }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     // validate credentials
-    if (!loginEmail || !loginPassword) return alert("Enter email and password");
+    if (!loginEmail || !loginPassword) return toast.error("Enter email and password");
 
     setLoading(true);
 
@@ -67,17 +67,17 @@ function LandingPage({ onAuthSuccess }) {
             const resendData = await resendResponse.json();
           
             if (resendResponse.ok) {
-              alert(resendData.message || "Verification email sent successfully. Please check your inbox.");
+              toast.success(resendData.message || "Verification email sent successfully. Please check your inbox.");
             } else {
-              alert(resendData.detail || "Failed to send verification email.");
+              toast.error(resendData.detail || "Failed to send verification email.");
             }
           } catch (resendError) {
             console.error("Resend error: ", resendError);
-            alert("Error sending verification email. Please try again.");
+            toast.error("Error sending verification email. Please try again.");
           }
         }
       } else {
-        alert(data.detail || data.message || "Login failed. Please try again.");
+        toast.error(data.detail || data.message || "Login failed. Please try again.");
       }
     }  catch (err) {
       console.error("Login error:", err);
@@ -119,10 +119,10 @@ function LandingPage({ onAuthSuccess }) {
         localStorage.setItem("userId", data.user_id);
         localStorage.setItem("email", data.email);
         localStorage.setItem("fullName", signupName);
-        alert(data.message || "Account created successfully. Please verify your email.");
+        toast.success(data.message || "Account created successfully. Please verify your email.");
         navigate("/dashboard");
       } else {
-        alert(data.detail || data.message || "Signup failed. Please try again.");
+        toast.error(data.detail || data.message || "Signup failed. Please try again.");
       }
     } catch (err) {
       console.error("Signup error:", err);

@@ -12,6 +12,7 @@ import MyMealsTab from './MyMealsTab';
 import CartTab from './CartTab';
 import { useNavigate } from 'react-router-dom';
 import Profile from './Profile';
+import { toast } from 'react-toastify';
 
 
 export default function Dashboard({ onLogout }) {
@@ -125,7 +126,7 @@ export default function Dashboard({ onLogout }) {
 
   const savePreferences = () => {
     localStorage.setItem("preferences", JSON.stringify(preferences));
-    alert("preferences saved")
+    toast.success("Preferences saved!")
   };
 
   // user ratings
@@ -169,6 +170,7 @@ export default function Dashboard({ onLogout }) {
   // add meal to cart
   const handleAddToCart = (meal) => {
     console.log("Adding to cart:", meal);
+    toast.success("Meal added to cart");
     setCart((prev) => {
       if (prev.find((item) => item.id === meal.id)) return prev; // prevent duplicates
       return [...prev, meal];
