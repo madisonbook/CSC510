@@ -133,22 +133,19 @@ export default function MealCard({
                     </div>
                   )}
 
-                  {(meal.ingredients || meal.nutritionInfo) && (
-                    <div className="space-y-1 pt-2">
-                      {meal.ingredients && (
-                        <div className="text-xs sm:text-sm">
-                          <span className="font-medium">Ingredients: </span>
-                          <span className="text-muted-foreground">{meal.ingredients}</span>
-                        </div>
-                      )}
-                      {meal.nutritionInfo && (
-                        <div className="text-xs sm:text-sm">
-                          <span className="font-medium">Nutrition: </span>
-                          <span className="text-muted-foreground">{meal.nutritionInfo}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {(meal.ingredients || meal.nutrition_info) && (
+                          <div className="space-y-1 pt-2">
+                            {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}
+                            {meal.nutrition_info && (
+                            <div className="text-xs sm:text-sm">
+                              <span className="font-medium">Nutrition: </span>
+                              <span className="text-muted-foreground">
+                                {`Calories: ${meal.nutrition_info.calories || "N/A"}, Protein: ${meal.nutrition_info.protein_grams || "N/A"}g, Carbs: ${meal.nutrition_info.carbs_grams || "N/A"}g, Fat: ${meal.nutrition_info.fat_grams || "N/A"}g`}
+                              </span>
+                            </div>
+                            )}                 
+                          </div>
+                        )}
                 </div>
 
                 <div className="flex flex-col space-y-2 sm:space-y-3">

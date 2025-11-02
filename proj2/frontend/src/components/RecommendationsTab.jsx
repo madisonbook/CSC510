@@ -216,11 +216,25 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                           </div>
                         )}
 
-                        {(meal.ingredients || meal.nutritionInfo) && (
+                        {(meal.ingredients || meal.nutrition_info) && (
                           <div className="space-y-1 pt-2">
-                            {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}
-                            {meal.nutritionInfo && <div className="text-xs sm:text-sm"><span className="font-medium">Nutrition: </span><span className="text-muted-foreground">{meal.nutritionInfo}</span></div>}
+                          {meal.ingredients && (
+                          <div className="text-xs sm:text-sm">
+                            <span className="font-medium">Ingredients: </span>
+                            <span className="text-muted-foreground">{meal.ingredients}</span>
                           </div>
+                        )}
+
+                        {meal.nutrition_info && (
+                        <div className="text-xs sm:text-sm">
+                          <span className="font-medium">Nutrition: </span>
+                          <span className="text-muted-foreground">
+                          {meal.nutrition_info.calories} cal, {meal.nutrition_info.protein_grams}g protein, {meal.nutrition_info.carbs_grams}g carbs, {meal.nutrition_info.fat_grams}g fat
+                          </span>
+                        </div>
+                        )}
+                      </div>
+                          
                         )}
                       </div>
 
