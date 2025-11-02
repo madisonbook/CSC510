@@ -71,14 +71,19 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
       );
   });
 
-  // fetch users own meals
+  // fetch users own (unexpired) meals to swap with
   const [userMeals, setUserMeals] = useState([]);
 
   useEffect(() => {
     const fetchUserMeals = async () => {
       try {
         const data = await getMyMeals();
-        setUserMeals(data); 
+        const now = new Date();
+        const unexpiredMeals = data.filter(meal => {
+          const expirationDate = new Date(meal.expires_date);
+          return expirationDate > now;
+        });
+        setUserMeals(unexpiredMeals); 
       } catch (error) {
         console.error("Failed to fetch user meals:", error);
       }
@@ -86,17 +91,6 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
     fetchUserMeals();
   }, []);
 
-  {/** 
-  // if no items in cart
-  if (!cart.length) {
-    return (
-      <div className="text-center py-12 space-y-4">
-        <h3>Your cart is empty</h3>
-        <p className="text-muted-foreground">Add meals from the Browse tab to see them here</p>
-      </div>
-    );
-  }
-    */}
 
   // meal price range  
   function mapPriceToLevel(price) {
@@ -104,7 +98,7 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
     if (price <= 40) return "2";      
     if (price <= 60) return "3";       
   return "4";                        
-}
+  }
 
   // render meal price range in $
   function renderPriceLevel(price) {
@@ -123,17 +117,17 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
 
     // show meal star rating
     const renderStars = (rating = 0, interactive = false, onRatingChange) => (
-    <div className="flex items-center space-x-1">
-      {[1, 2, 3, 4, 5].map(star => (
-        <Star
-          key={star}
-          className={`w-4 h-4 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${interactive ? 'cursor-pointer hover:text-yellow-400' : ''}`}
-          onClick={interactive && onRatingChange ? () => onRatingChange(star) : undefined}
-        />
-      ))}
-      <span className="ml-2 text-sm text-muted-foreground">{rating.toFixed(1)}</span>
-    </div>
-  );
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map(star => (
+          <Star
+            key={star}
+            className={`w-4 h-4 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${interactive ? 'cursor-pointer hover:text-yellow-400' : ''}`}
+            onClick={interactive && onRatingChange ? () => onRatingChange(star) : undefined}
+          />
+        ))}
+        <span className="ml-2 text-sm text-muted-foreground">{rating.toFixed(1)}</span>
+      </div>
+    );
 
   // calculate total price (excluding swapped meals)
   const totalPrice = cart.reduce((sum, meal) => {
@@ -328,7 +322,7 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
       </AlertDialog>
 
 
-      {/* Remove Confirmation Dialog */}
+      {/* remove confirmation dialog */}
       {mealToRemove && (
         <AlertDialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
           <AlertDialogContent>
@@ -351,7 +345,6 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
 
 
       {/** swap meal dialog */}
-       
       <AlertDialog open={swapDialogOpen} onOpenChange={setSwapDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -417,6 +410,5 @@ export default function CheckoutTab({ cart, onRemoveFromCart, userRatings, onRat
       </AlertDialog>
 
   </div>
-
   );
 }
