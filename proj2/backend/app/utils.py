@@ -53,6 +53,63 @@ def send_verification_email(email: str, token: str, user_type: str = "user"):
     """Send (or simulate sending) verification email"""
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
     verification_link = f"{BASE_URL}/api/auth/verify?email={email}&token={token}&type={user_type}"
-    
-    print(f"✅ Verification link for {email}: {verification_link}")
-    return True
+
+    # If SMTP configuration is not provided, fall back to printing the link.
+    SMTP_SERVER = os.getenv("SMTP_SERVER")
+    if not SMTP_SERVER:
+        print(f"✅ Verification link for {email}: {verification_link}")
+        return True
+
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+    SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
+    USE_SSL = os.getenv("SMTP_USE_SSL", "0") == "1"
+    USE_TLS = os.getenv("SMTP_USE_TLS", "1") == "1"
+
+    # Build email
+    subject = "Verify your Taste Buddiez account"
+    text = f"Please verify your email by visiting the link: {verification_link}\n\nThis link expires in 24 hours."
+    html = f"""
+    <html>
+      <body>
+        <h2>Verify your Taste Buddiez account</h2>
+        <p>Click the button below to verify your email address for your account.</p>
+        <p><a href=\"{verification_link}\" style=\"background:#f97316;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;\">Verify Email</a></p>
+        <p>If the button doesn't work, paste this link into your browser:</p>
+        <p>{verification_link}</p>
+      </body>
+    </html>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = SENDER_EMAIL or "noreply@localhost"
+    msg["To"] = email
+
+    part1 = MIMEText(text, "plain")
+    part2 = MIMEText(html, "html")
+    msg.attach(part1)
+    msg.attach(part2)
+
+    try:
+        if USE_SSL:
+            server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, timeout=10)
+        else:
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
+        server.ehlo()
+        if not USE_SSL and USE_TLS:
+            server.starttls()
+            server.ehlo()
+
+        if SENDER_EMAIL and SENDER_PASSWORD:
+            server.login(SENDER_EMAIL, SENDER_PASSWORD)
+
+        server.send_message(msg)
+        server.quit()
+        print(f"✅ Sent verification email to {email}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Failed to send verification email to {email}: {e}")
+        # Fallback: print the link so developer can copy it from logs
+        print(f"Fallback verification link for {email}: {verification_link}")
+        return False

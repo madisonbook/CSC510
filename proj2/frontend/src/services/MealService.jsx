@@ -243,12 +243,14 @@ export const uploadPhotos = async (files) => {
     const form = new FormData();
     Array.from(files).forEach((f) => form.append('files', f));
 
+    // Use same auth helper as other endpoints so we fail fast if not logged in
+    const headers = getAuthHeaders();
+    // remove Content-Type from headers because fetch/Browser will set multipart boundary
+    delete headers['Content-Type'];
+
     const response = await fetch(`${backendURL}/api/meals/upload`, {
       method: 'POST',
-      headers: {
-        // Don't set Content-Type; the browser will set multipart boundary
-        'Authorization': `Bearer ${localStorage.getItem('email')}`
-      },
+      headers,
       body: form
     });
 

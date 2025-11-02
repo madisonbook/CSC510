@@ -189,12 +189,12 @@ export default function Dashboard({ onLogout }) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden md:block">
-                  <p className="text-sm">{userId}</p>
+                  <p className="text-sm">{user?.full_name ? user.full_name : (fullName || 'User')}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={onLogout}
+                  onClick={handleLogout}
                   className="h-8 w-8 sm:h-9 sm:w-9"
                 >
                   <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />

@@ -9,6 +9,7 @@ from .models import (
 )
 from .database import get_database
 from .dependencies import get_current_user
+from .dependencies import get_current_user, get_optional_current_user
 from fastapi import UploadFile, File
 import os
 import uuid
@@ -92,7 +93,7 @@ async def create_meal(
 @router.post("/upload", response_model=List[str])
 async def upload_photos(
     files: List[UploadFile] = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: Optional[dict] = Depends(get_optional_current_user)
 ):
     """Accept multipart file uploads and save them to server static folder.
 
@@ -107,9 +108,14 @@ async def upload_photos(
         # sanitize filename by prepending uuid
         filename = f"{uuid.uuid4().hex}_{upload.filename}"
         dest_path = os.path.join(uploads_dir, filename)
-        content = await upload.read()
-        with open(dest_path, "wb") as f:
-            f.write(content)
+        try:
+            content = await upload.read()
+            with open(dest_path, "wb") as f:
+                f.write(content)
+        except Exception as e:
+            # Log server-side error for easier debugging
+            print(f"⚠️ Failed to save uploaded file {upload.filename} -> {dest_path}: {e}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to save uploaded file: {upload.filename}")
 
         # URL served by StaticFiles mounted at /static
         url_path = f"/static/uploads/{filename}"
