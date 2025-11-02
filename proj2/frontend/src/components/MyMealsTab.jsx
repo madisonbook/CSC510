@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { getMyMeals, createMeal, deleteMeal, updateMeal } from '../services/MealService';
+import { getMyMeals, createMeal, deleteMeal, updateMeal, uploadPhotos } from '../services/MealService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -47,6 +47,7 @@ export default function MyMealsTab({ userLocation }) {
     nutritionInfo: '',
     pickupAddress: ''
   });
+  const [photosFiles, setPhotosFiles] = useState([]);
 
   // fetch existing meals
   useEffect(() => {
@@ -74,12 +75,25 @@ export default function MyMealsTab({ userLocation }) {
     const now = new Date();
     const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hrs later
 
+    // upload photos first (if any files selected)
+    let photoUrls = ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"];
+    if (photosFiles && photosFiles.length > 0) {
+      try {
+        photoUrls = await uploadPhotos(photosFiles);
+      } catch (err) {
+        console.error('Photo upload failed:', err);
+        alert('Failed to upload photos');
+        setLoading(false);
+        return;
+      }
+    }
+
     const mealData = {
       title: formData.name,
       description: formData.description,
       cuisine_type: formData.cuisine.replace(/^[^\w]+/, ""),
       meal_type: "Lunch",
-      photos: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"],
+      photos: photoUrls,
       portion_size: `${formData.servings} servings`,
       available_for_sale: true,
       sale_price: parseFloat(formData.price) || 0,
@@ -295,6 +309,20 @@ export default function MyMealsTab({ userLocation }) {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* Photo upload */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="photos" className="text-sm">Photos (optional)</Label>
+                    <input
+                      id="photos"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => setPhotosFiles(e.target.files)}
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">You can upload multiple images. They will be uploaded and attached to the meal.</p>
                   </div>
 
                   {/* Description */}

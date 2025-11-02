@@ -110,7 +110,14 @@ function LandingPage({ onAuthSuccess }) {
         alert(data.message || "Account created successfully. Please verify your email.");
         navigate("/dashboard");
       } else {
-        alert(data.detail || data.message || "Signup failed. Please try again.");
+        // Handle Pydantic/FastAPI validation errors which come back as
+        // { detail: [ {loc:..., msg:..., type:...}, ... ] }
+        if (data && Array.isArray(data.detail)) {
+          const messages = data.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+          alert(messages);
+        } else {
+          alert(data.detail || data.message || "Signup failed. Please try again.");
+        }
       }
     } catch (err) {
       console.error("Signup error:", err);

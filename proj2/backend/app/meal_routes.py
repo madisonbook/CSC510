@@ -9,6 +9,9 @@ from .models import (
 )
 from .database import get_database
 from .dependencies import get_current_user
+from fastapi import UploadFile, File
+import os
+import uuid
 
 router = APIRouter(prefix="/api/meals", tags=["Meals"])
 
@@ -83,6 +86,36 @@ async def create_meal(
     created_meal = await db.meals.find_one({"_id": result.inserted_id})
     
     return meal_to_response(created_meal, current_user)
+
+
+# Upload one or more photos for a meal. Returns list of accessible URLs.
+@router.post("/upload", response_model=List[str])
+async def upload_photos(
+    files: List[UploadFile] = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Accept multipart file uploads and save them to server static folder.
+
+    Returns list of URLs that can be stored in the meal `photos` field.
+    """
+    uploads_dir = os.path.join(os.path.dirname(__file__), "static", "uploads")
+    uploads_dir = os.path.abspath(uploads_dir)
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    saved_urls: List[str] = []
+    for upload in files:
+        # sanitize filename by prepending uuid
+        filename = f"{uuid.uuid4().hex}_{upload.filename}"
+        dest_path = os.path.join(uploads_dir, filename)
+        content = await upload.read()
+        with open(dest_path, "wb") as f:
+            f.write(content)
+
+        # URL served by StaticFiles mounted at /static
+        url_path = f"/static/uploads/{filename}"
+        saved_urls.append(url_path)
+
+    return saved_urls
 
 # Get all meals with filters
 @router.get("/", response_model=List[MealResponse])

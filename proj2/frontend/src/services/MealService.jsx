@@ -29,8 +29,20 @@ export const createMeal = async (mealData) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to create meal");
+      // Parse structured FastAPI/Pydantic errors (422) into a readable message
+      let errorBody;
+      try {
+        errorBody = await response.json();
+      } catch (e) {
+        throw new Error("Failed to create meal");
+      }
+
+      if (errorBody && Array.isArray(errorBody.detail)) {
+        const messages = errorBody.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+        throw new Error(messages || "Failed to create meal");
+      }
+
+      throw new Error(errorBody.detail || errorBody.message || "Failed to create meal");
     }
 
     return await response.json();
@@ -220,4 +232,37 @@ export const exampleMealData = {
   preparation_date: "2024-10-22T10:00:00Z",
   expires_date: "2024-10-25T23:59:59Z",
   pickup_instructions: "Available for pickup between 5-7 PM at my apartment"
+};
+
+/**
+ * Upload photo files to the backend and get back URLs.
+ * files: FileList or Array<File>
+ */
+export const uploadPhotos = async (files) => {
+  try {
+    const form = new FormData();
+    Array.from(files).forEach((f) => form.append('files', f));
+
+    const response = await fetch(`${backendURL}/api/meals/upload`, {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type; the browser will set multipart boundary
+        'Authorization': `Bearer ${localStorage.getItem('email')}`
+      },
+      body: form
+    });
+
+    if (!response.ok) {
+      let errBody;
+      try { errBody = await response.json(); } catch { errBody = await response.text(); }
+      throw new Error(errBody.detail || errBody || 'Failed to upload photos');
+    }
+
+    const data = await response.json();
+    // returned items are relative paths like /static/uploads/..., convert to absolute URLs
+    return data.map(p => `${backendURL}${p}`);
+  } catch (error) {
+    console.error('Error uploading photos:', error);
+    throw error;
+  }
 };

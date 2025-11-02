@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Header
+from fastapi.responses import HTMLResponse
 from datetime import datetime, timedelta
 from bson import ObjectId
 from typing import Optional
@@ -78,29 +79,43 @@ async def register_user(user: UserCreate):
 
 @router.get("/api/auth/verify", response_model=dict)
 async def verify_user(email: str, token: str):
-    """Verify a user's email address"""
+    """Verify a user's email address (GET).
+
+    This endpoint returns an HTML page so users who click the emailed link
+    get a human-friendly confirmation instead of raw JSON.
+    """
     db = get_database()
-    
+
     token_doc = await db.verification_tokens.find_one({
         "email": email,
         "token": token,
         "token_type": "email_verification"
     })
-    
+
     if not token_doc:
         raise HTTPException(status_code=400, detail="Invalid or expired verification token.")
-    
+
     if datetime.utcnow() > token_doc["expires_at"]:
         raise HTTPException(status_code=400, detail="Verification token has expired.")
-    
+
+    # Mark user verified and remove token
     await db.users.update_one(
         {"email": email},
         {"$set": {"verified": True, "status": AccountStatus.ACTIVE}}
     )
-    
+
     await db.verification_tokens.delete_one({"_id": token_doc["_id"]})
-    
-    return {"message": "Email verified successfully!"}
+
+    html = f"""
+    <html>
+      <head><title>Email Verified</title></head>
+      <body style="font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial; padding:2rem;">
+        <h2>Email verified successfully!</h2>
+        <p>Your email <strong>{email}</strong> has been verified. You can now log in.</p>
+      </body>
+    </html>
+    """
+    return HTMLResponse(content=html, status_code=status.HTTP_200_OK)
 
 
 # Email Verification
@@ -164,7 +179,7 @@ async def resend_verification(email: str, account_type: str = "user"):
     collection = db.users 
     email_field = "email"
     
-    account = collection.find_one({email_field: email})
+    account = await collection.find_one({email_field: email})
     if not account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -228,11 +243,10 @@ async def login(credentials: UserLogin):
         }
     
 
-#End point just for testing
 @router.get("/api/debug/users")
 async def list_users():
     db = get_database()
-    users = await db.users.find().to_list(100)  # limit to 100 users
+    users = await db.users.find().to_list(100)
     
     for user in users:
         user["_id"] = str(user["_id"])
