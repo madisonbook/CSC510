@@ -30,6 +30,7 @@ function LandingPage({ onAuthSuccess }) {
   const [pendingEmail, setPendingEmail] = useState("");
   const backendURL = "http://localhost:8000";
 
+  // log user in
   const handleLogin = async (e) => {
     e.preventDefault();
     // validate credentials
@@ -53,45 +54,67 @@ function LandingPage({ onAuthSuccess }) {
         localStorage.setItem("email",data.email);
         navigate("/dashboard");
       } else if (response.status == 403 && data.detail?.includes("verify your email")) {
-        // handle unverified account
-        const resend = window.confirm(
-          "Your email is not verified. Would you like to resend the verification email?"
-        );
+          // show toast notif with resend email verification button
+          toast.info( 
+            <div>
+              <p>Your email is not verified. Please click to resend your verification email to gain access to your account.</p>
+              <Button
+                onClick={async () => {
+                  try {
+                    const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}&account_type=user`,
+                    { method: "POST" });
+                    const resendData = await resendResponse.json();
 
-        if (resend){
-          try {
-            const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}&account_type=user`, {
-            method: "POST",
-          });
-          
-            const resendData = await resendResponse.json();
-          
-            if (resendResponse.ok) {
-              toast.success(resendData.message || "Verification email sent successfully. Please check your inbox.");
-            } else {
-              toast.error(resendData.detail || "Failed to send verification email.");
-            }
-          } catch (resendError) {
-            console.error("Resend error: ", resendError);
-            toast.error("Error sending verification email. Please try again.");
-          }
-        }
-      } else {
-        toast.error(data.detail || data.message || "Login failed. Please try again.");
+                    if(resendResponse.ok){
+                      toast.success(resendData.message || "Verification email sent successfully. Please check your inbox.");
+                    } else {
+                      toast.error(resendData.detail || "Failed to send verification email");
+                    }
+                  } catch (resendError) {
+                    console.error("Resend Error: ", resendError);
+                    toast.error("Error sending verification email. Please try again.");
+                  }
+                }}
+                style={{
+                  background: "#4f46e5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "6px 12px",
+                  marginTop: "8px",
+                  cursor: "pointer",
+                }}
+                >
+                  Resend Verification Email
+                </Button>
+            </div>,
+            { autoClose: false}
+          );
+        } else {
+          toast.error(data.detail || data.message || "Login failed. Please try again.");
+        } 
+      } catch (error) {
+        console.error("Login error: , error");
+        toast.error("Error connecting to backend");
+      } finally {
+        setLoading(false);
       }
-    }  catch (err) {
-      console.error("Login error:", err);
-      alert("Error connecting to backend");
-    } finally {
-      setLoading(false);
-    }
   };
 
+  // sign up user
   const handleSignup = async (e) => {
     e.preventDefault();
-    // create user account
-    if (!signupEmail || !signupPassword || !signupName) return alert("Fill in all fields");
+    if (!signupEmail || !signupPassword || !signupName) return toast.error("Please fill in all fields");
 
+    // password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+      if (!passwordRegex.test(signupPassword)) {
+        return toast.error(
+          "Password must be at least 8 characters long, include at least 1 uppercase letter, 1 lowercase letter, & 1 number"
+        );
+      }
+
+    // create user account
     setLoading(true);
     try {
       const response = await fetch(`${backendURL}/api/auth/register/user`, {
@@ -126,11 +149,11 @@ function LandingPage({ onAuthSuccess }) {
       }
     } catch (err) {
       console.error("Signup error:", err);
-      alert("Error connecting to backend");
+      toast.error("Error connecting to backend");
     } finally {
       setLoading(false);
     }
-  };
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/50 to-accent/30">
@@ -170,7 +193,7 @@ function LandingPage({ onAuthSuccess }) {
             
             <div className="space-y-4 sm:space-y-6">
               <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight max-w-6xl mx-auto font-serif">
-                Share & Swap
+                Buy & Swap
                 <span className="block text-primary italic font-medium">
                   Homemade Meals
                 </span>
@@ -180,7 +203,7 @@ function LandingPage({ onAuthSuccess }) {
             
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto font-sans font-light px-4">
               Buy, sell, or swap delicious homemade meals with your neighbors. 
-              <span className="text-foreground font-medium">Support your community</span> while enjoying authentic home-cooked food.
+              <span className="text-foreground font-medium"> Support your community</span> while enjoying authentic home-cooked food.
             </p>
           </div>
 
@@ -211,8 +234,8 @@ function LandingPage({ onAuthSuccess }) {
             <CardContent className="p-6 sm:p-10">
               <Tabs defaultValue="signup" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/50 h-12">
-                  <TabsTrigger value="signup" className=" data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
-                  <TabsTrigger value="login" className=" data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
+                  <TabsTrigger value="signup" className="cursor-pointer data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
+                  <TabsTrigger value="login" className="cursor-pointer data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
                 </TabsList>
 
                 {/* Signup Form */}                
