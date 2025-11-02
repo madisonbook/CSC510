@@ -24,6 +24,7 @@ services:
     restart: always
     environment:
       - MONGODB_URL=mongodb://mongodb:27017/myapp
+      - DEV_PLAINTEXT_PASSWORDS=1
     depends_on:
       mongodb:
         condition: service_healthy
