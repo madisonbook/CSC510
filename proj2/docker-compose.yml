@@ -1,57 +1,91 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:7.0
     container_name: mongodb
     restart: always
-    ports:
-      - "27017:27017"
+    ports: ["27017:27017"]
     environment:
       MONGO_INITDB_DATABASE: myapp
     volumes:
       - mongodb_data:/data/db
-      - ./seed/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    networks:
-      - app-network
+    networks: [app-network]
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/myapp --quiet
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
-  backend:
+  fastapi-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: fastapi-backend
     restart: always
-    ports:
-      - "8000:8000"
     environment:
-      - MONGODB_URL=mongodb://mongodb:27017
-      - DATABASE_NAME=myapp
+      - MONGODB_URL=mongodb://mongodb:27017/myapp
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    ports: ["8000:8000"]
     volumes:
       - ./backend/app:/app/app
-    networks:
-      - app-network
+    networks: [app-network]
 
-  frontend:
+  react-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: react-frontend
     restart: always
-    ports:
-      - "5173:5173"
+    depends_on: [fastapi-backend]
+    ports: ["5173:5173"]
+    networks: [app-network]
+
+  test-mongo:
+    image: mongo:6.0
+    container_name: test_mongo
+    ports: ["27018:27017"]
+    environment:
+      MONGO_INITDB_DATABASE: test_meal_db
+    networks: [test-network]
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    profiles: [test]
+
+  test-all:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: test_all
     depends_on:
-      - backend
+      test-mongo:
+        condition: service_healthy
+    environment:
+      - TEST_MONGO_URL=mongodb://test-mongo:27017
+      - TEST_DB_NAME=test_meal_db
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-    networks:
-      - app-network
+      - ./backend/app:/app/app
+      - ./backend/pytest.ini:/app/pytest.ini
+      - ./backend/.coveragerc:/app/.coveragerc
+      - ./backend/htmlcov:/app/htmlcov
+    networks: [test-network]
+    command: >
+      sh -c "pytest app/tests/ -v --tb=short --color=yes
+      --cov=app --cov-report=html --cov-report=term-missing --cov-report=xml"
+    profiles: [test]
 
 volumes:
   mongodb_data:
 
 networks:
   app-network:
+    driver: bridge
+  test-network:
     driver: bridge

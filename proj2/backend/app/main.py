@@ -2,20 +2,40 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from contextlib import asynccontextmanager
+import asyncio
+from datetime import datetime
 from .database import connect_to_mongo, close_mongo_connection, get_database
 from .auth_routes import router as auth_router
 from .user_routes import router as user_router
 from .meal_routes import router as meal_router
 from pymongo import ASCENDING
+from pymongo import ASCENDING
+from . import seed_data
 
+async def wait_for_mongo(retries: int = 60, delay: float = 1.0):
+    db = get_database()
+    for _ in range(retries):
+        try:
+            await db.command("ping")
+            return
+        except Exception:
+            await asyncio.sleep(delay)
+    raise RuntimeError("MongoDB not ready after waiting")
+
+async def run_seed_once():
+    db = get_database()
+    if await db["_meta"].find_one({"key": "seed_done"}):
+        return
+    await seed_data.seed()
+    await db["_meta"].insert_one({"key": "seed_done", "at": datetime.utcnow()})
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await connect_to_mongo()
+    await wait_for_mongo()
+    await run_seed_once()
     yield
-    # Shutdown
     await close_mongo_connection()
 
 app = FastAPI(
