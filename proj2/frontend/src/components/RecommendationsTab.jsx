@@ -61,9 +61,15 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   // filter meals based on preferences & remove user's own meals
   useEffect(() => {
     if (!meals.length || !preferences) return;
+    // get current date
+    const now = new Date();
 
     const filtered = meals.filter((meal) => {
       if (meal.seller_id === currentUserId) return false;
+      // filter out expired meals, remove these next 2 lines if needed
+      const expirationDate = new Date(meal.expires_date);
+      if (expirationDate <= now) return false;
+
       const cuisineMatch = !(preferences?.cuisines?.length) || preferences.cuisines.includes(meal.cuisine_type);
       const allergenMatch = !meal.allergens?.some(a => preferences?.allergens?.includes(a));
       const priceLevel = mapPriceToLevel(Number(meal.sale_price));
@@ -81,15 +87,6 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     setFilteredMeals(filtered);
   }, [meals, preferences, currentUserId]);
 
-  // add meals to cart
-  const handleAddToCart = (meal) => {
-    console.log("Added to cart: ", meal.title);
-    setCart(prev => {
-    const updated = [...prev, meal];
-    localStorage.setItem('cart', JSON.stringify(updated));
-    return updated;
-  });
-  }
 
   // fetch seller info by id
   const handleViewSeller = async (seller_id) => {

@@ -107,6 +107,11 @@ export default function Profile({ user, onUpdate }) {
     }
   };
 
+  if (!user) {
+    return <p>Loading profile...</p>;
+  }
+
+
   return (
      
     <Dialog.Root>
@@ -127,7 +132,7 @@ export default function Profile({ user, onUpdate }) {
 
           {!isEditing ? (
             <div className="space-y-2">
-              <p><strong>Full Name:</strong> {user.full_name}</p>
+              <p><strong>Full Name:</strong> {user?.full_name || "Guest"}</p>
               <p><strong>Email:</strong> {user.email}</p>
               <p><strong>Phone:</strong> {user.phone || "-"}</p>
               <p><strong>Bio:</strong> {user.bio || "-"}</p>
