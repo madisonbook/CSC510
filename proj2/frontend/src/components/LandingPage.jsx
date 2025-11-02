@@ -465,6 +465,15 @@ function LandingPage({ onAuthSuccess }) {
             </div>
           </div>
         </div>
+        {/* Support / Contact */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="text-center">
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Need help? Reach out to our support team at
+              <a href="mailto:tbuddiez@yahoo.com" className="ml-2 text-primary underline">tbuddiez@yahoo.com</a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
