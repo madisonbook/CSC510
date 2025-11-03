@@ -13,6 +13,7 @@ import { Switch } from './ui/switch';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { Plus, MapPin, Clock, DollarSign, Trash2, Package } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 
 const COMMON_ALLERGENS = [
@@ -44,8 +45,8 @@ export default function MyMealsTab({ userLocation }) {
     allergens: [],
     isSwapAvailable: false,
     ingredients: '',
-    nutritionInfo: '',
-    pickupAddress: ''
+    nutritionInfo: { calories: '', protein_grams: '', carbs_grams: '', fat_grams: '' },
+    pickupAddress: '',
   });
 
   // fetch existing meals
@@ -67,7 +68,7 @@ export default function MyMealsTab({ userLocation }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userLocation && !formData.pickupAddress) {
-      alert('Please add your location in Preferences or enter a pickup address');
+      toast.error('Please add your location in Preferences or enter a pickup address');
       return;
     }
 
@@ -80,7 +81,7 @@ export default function MyMealsTab({ userLocation }) {
       cuisine_type: formData.cuisine.replace(/^[^\w]+/, ""),
       meal_type: "Lunch",
       photos: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"],
-      portion_size: `${formData.servings} servings`,
+      portion_size: `${formData.servings}`,
       available_for_sale: true,
       sale_price: parseFloat(formData.price) || 0,
       available_for_swap: formData.isSwapAvailable,
@@ -89,9 +90,7 @@ export default function MyMealsTab({ userLocation }) {
         contains: formData.allergens,
         may_contain: [],
       },
-      nutrition_info: formData.nutritionInfo.trim() !== "" ? {
-        details: formData.nutritionInfo,
-      } : null,
+      nutrition_info: formData.nutritionInfo,
       preparation_date: now.toISOString(),
       expires_date: expires.toISOString(),
       pickup_instructions: formData.pickupAddress || userLocation?.address || "Location not specified",
@@ -118,7 +117,7 @@ export default function MyMealsTab({ userLocation }) {
     });
     } catch (error) {
       console.error("Error adding meal: ", error);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -129,7 +128,7 @@ export default function MyMealsTab({ userLocation }) {
       setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
     } catch (error) {
       console.error("Error deleting meal: ", error);
-      alert(error.message);
+      toast.error(error.message);
     }
   };
 
@@ -154,7 +153,7 @@ export default function MyMealsTab({ userLocation }) {
   const handleSaveEdits = async (mealId) => {
     try {
       await updateMeal(mealId, formData);
-      console.log("Meal updated succesfully");
+      console.log("Meal updated succesfully!!");
       setEditMeal(null);
       // refresh meal list
       getMyMeals();
@@ -189,6 +188,7 @@ export default function MyMealsTab({ userLocation }) {
     try {
       await updateMeal(selectedMeal.id, updatePayload);
       console.log("Meal updated successfully");
+      toast.success("Meal updated")
       setIsEditOpen(false);
       const updatedMeals = await getMyMeals(); // refresh meal list
       setMeals(updatedMeals);
@@ -221,6 +221,29 @@ export default function MyMealsTab({ userLocation }) {
     const expires = new Date(expiresAt);
     return new Date() >= expires;
   };
+
+    // meal price range  
+  function mapPriceToLevel(price) {
+    if (price <= 20) return "1";       
+    if (price <= 40) return "2";      
+    if (price <= 60) return "3";       
+  return "4";                        
+  }
+
+  // render meal price range in $
+  function renderPriceLevel(price) {
+    const level = mapPriceToLevel(price);
+    const color =
+      level === "1"
+        ? "text-[#D9A299]"
+        : level === "2"
+        ? "text-[#C2857F]"
+        : level === "3"
+        ? "text-[#A86A66]"
+        : "text-[#8F5250]";
+
+    return <span className={`font-semibold ${color}`}>{"$".repeat(level)}</span>;
+  }
 
   // filter out expired meals
   // const activeMeals = meals.filter(meal => !isExpired(meal.expires_date));
@@ -499,9 +522,9 @@ export default function MyMealsTab({ userLocation }) {
                     </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
                         <span>{meal.cuisine_type}</span>
-                        <div className="flex items-center space-x-1"><DollarSign className="w-3 h-3 shrink-0" /><span>${meal.sale_price}</span></div>
+                        <div className="flex items-center space-x-1"><span>{renderPriceLevel?.(meal.sale_price)}</span><span>${meal.sale_price}</span></div>
                         <div className="flex items-center space-x-1"><MapPin className="w-3 h-3 shrink-0" /><span>{meal.pickup_instructions}</span></div>
-                        <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size}</span></div>
+                        <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size} servings</span></div>
                       </div> 
                     <CardDescription className="text-sm sm:text-base">{meal.description}</CardDescription>
                 </CardHeader>
@@ -533,7 +556,14 @@ export default function MyMealsTab({ userLocation }) {
                          {(meal.ingredients || meal.nutrition_info) && (
                           <div className="space-y-1 pt-2">
                             {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}
-                            {meal.nutrition_info && <div className="text-xs sm:text-sm"><span className="font-medium">Nutrition: </span><span className="text-muted-foreground">{meal.nutritionInfo}</span></div>}
+                            {meal.nutrition_info && (
+                            <div className="text-xs sm:text-sm">
+                              <span className="font-medium">Nutrition: </span>
+                              <span className="text-muted-foreground">
+                                {`Calories: ${meal.nutrition_info.calories || "N/A"}, Protein: ${meal.nutrition_info.protein_grams || "N/A"}g, Carbs: ${meal.nutrition_info.carbs_grams || "N/A"}g, Fat: ${meal.nutrition_info.fat_grams || "N/A"}g`}
+                              </span>
+                            </div>
+                            )}                 
                           </div>
                         )}
 
@@ -730,18 +760,60 @@ export default function MyMealsTab({ userLocation }) {
             />
           </div>
 
-          {/* Nutrition Info */}
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="nutritionInfo" className="text-sm">Nutrition Info (Optional)</Label>
-            <Textarea
-              id="nutritionInfo"
-              value={formData.nutritionInfo || ""}
-              onChange={(e) => setFormData({ ...formData, nutritionInfo: e.target.value })}
-              placeholder="e.g., Calories: 450, Protein: 25g, Carbs: 40g, Fat: 15g"
-              rows={2}
-              className="resize-none text-sm"
-            />
-          </div>
+        {/* Nutrition Info (Optional) */}
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-sm">Nutrition Info (Optional)</Label>
+          <div className="grid sm:grid-cols-4 gap-3">
+          <Input
+            type="number"
+            placeholder="Calories"
+            value={formData.nutritionInfo?.calories || ""}
+            onChange={(e) =>
+              setFormData({
+              ...formData,
+              nutritionInfo: { ...formData.nutritionInfo, calories: e.target.value },
+            })
+            }
+            className="h-9 sm:h-10"
+          />
+          <Input
+            type="number"
+            placeholder="Protein (g)"
+            value={formData.nutritionInfo?.protein_grams || ""}
+            onChange={(e) =>
+              setFormData({
+              ...formData,
+              nutritionInfo: { ...formData.nutritionInfo, protein_grams: e.target.value },
+            })
+            }
+            className="h-9 sm:h-10"
+          />
+          <Input
+            type="number"
+            placeholder="Carbs (g)"
+            value={formData.nutritionInfo?.carbs_grams || ""}
+            onChange={(e) =>
+              setFormData({
+              ...formData,
+              nutritionInfo: { ...formData.nutritionInfo, carbs_grams: e.target.value },
+            })
+            }
+            className="h-9 sm:h-10"
+          />
+          <Input
+            type="number"
+            placeholder="Fat (g)"
+            value={formData.nutritionInfo?.fat_grams || ""}
+            onChange={(e) =>
+              setFormData({
+              ...formData,
+              nutritionInfo: { ...formData.nutritionInfo, fat_grams: e.target.value },
+            })
+            }
+            className="h-9 sm:h-10"
+          />
+        </div>
+        </div>
 
           {/* Swap Available */}
           <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
@@ -789,18 +861,13 @@ export default function MyMealsTab({ userLocation }) {
             <Button
               variant="destructive"
               onClick={async () => {
-              if (!mealToDelete) return;
-                try {
-                  await deleteMeal(mealToDelete.id);
-                  setMeals(prev => prev.filter(meal => meal.id !== mealToDelete.id));
-                } catch (error) {
-                console.error("Error deleting meal: ", error);
-                alert(error.message);
-                } finally {
-                setIsDeleteOpen(false);
-                setMealToDelete(null);
-              }
+                if (!mealToDelete) return;
+
+                await handleDeleteMeal(mealToDelete.id); // call the handler
+                setIsDeleteOpen(false); // close the dialog
+                setMealToDelete(null);  // reset the state
               }}
+              className="bg-[#dc3545]"
             >
               Delete
             </Button>

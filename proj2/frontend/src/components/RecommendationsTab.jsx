@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
 import { useEffect, useState } from 'react';
 import { getAllMeals } from '../services/MealService';
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 
 
-export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation }) {
+export default function RecommendationsTab({ preferences, userRatings, onRateRestaurant, userLocation, addToCart, currentUserId }) {
   const [meals, setMeals] = useState([]);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [filteredMeals, setFilteredMeals] = useState([]);
@@ -22,6 +23,8 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
   const [reportingMeal, setReportingMeal] = useState(null);
+  const [selectedSeller, setSelectedSeller] = useState(null);
+  const [sellerDialogOpen, setSellerDialogOpen] = useState(false);
 
   // fetch meals
   useEffect(() => {
@@ -32,18 +35,41 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     } fetchMeals();
   }, []);
 
+  // meal price range  
   function mapPriceToLevel(price) {
-    if (price <= 20) return 1;       
-    if (price <= 40) return 2;      
-    if (price <= 60) return 3;       
-  return 4;                        
+    if (price <= 20) return "1";       
+    if (price <= 40) return "2";      
+    if (price <= 60) return "3";       
+  return "4";                        
 }
 
-  // filter meals based on preferences
+  // render meal price range in $
+  function renderPriceLevel(price) {
+  const level = mapPriceToLevel(price);
+  const color =
+    level === "1"
+      ? "text-[#D9A299]"
+      : level === "2"
+      ? "text-[#C2857F]"
+      : level === "3"
+      ? "text-[#A86A66]"
+      : "text-[#8F5250]";
+
+  return <span className={`font-semibold ${color}`}>{"$".repeat(level)}</span>;
+}
+
+  // filter meals based on preferences & remove user's own meals
   useEffect(() => {
     if (!meals.length || !preferences) return;
+    // get current date
+    const now = new Date();
 
     const filtered = meals.filter((meal) => {
+      if (meal.seller_id === currentUserId) return false;
+      // filter out expired meals, remove these next 2 lines if needed
+      const expirationDate = new Date(meal.expires_date);
+      if (expirationDate <= now) return false;
+
       const cuisineMatch = !(preferences?.cuisines?.length) || preferences.cuisines.includes(meal.cuisine_type);
       const allergenMatch = !meal.allergens?.some(a => preferences?.allergens?.includes(a));
       const priceLevel = mapPriceToLevel(Number(meal.sale_price));
@@ -53,16 +79,29 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
       return cuisineMatch && allergenMatch && priceMatch;
     });
 
-    // Debug logs
+    // debug logs
     console.log('Meals before filtering:', meals);
     console.log('Preferences:', preferences);
     console.log('Filtered meals:', filtered);
 
     setFilteredMeals(filtered);
-  }, [meals, preferences]);
+  }, [meals, preferences, currentUserId]);
 
 
+  // fetch seller info by id
+  const handleViewSeller = async (seller_id) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${seller_id}`);
+      if (!response.ok) throw new Error("Failed to fetch seller info");
+      const data = await response.json();
+      setSelectedSeller(data);
+      setSellerDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching seller info: ", error);
+    }
+  };
 
+  // handle reporting & rating
   const handleReport = () => {
     if (!reportReason) {
       alert('Please select a reason for reporting');
@@ -84,6 +123,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     }
   };
 
+  // render stars for rating
   const renderStars = (rating = 0, interactive = false, onRatingChange) => (
     <div className="flex items-center space-x-1">
       {[1, 2, 3, 4, 5].map(star => (
@@ -97,6 +137,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
     </div>
   );
 
+  // if no meals match preferences
   if (!filteredMeals.length) {
     return (
       <div className="text-center py-12 space-y-4">
@@ -138,9 +179,12 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                         {userRatings[meal.id] && <Heart className="w-4 h-4 fill-red-500 text-red-500 shrink-0" />}
                       </CardTitle>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-muted-foreground">
-                        <div className="flex items-center space-x-1"><User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span></div>
+                        <div className="flex items-center space-x-1 cursor-pointer hover:underline text-[#A86A66]"
+                          onClick={() => handleViewSeller(meal.seller_id)}>
+                            <User2 className="w-3 h-3 shrink-0" /><span>{meal.seller_name}</span>
+                        </div>
                         <span>{meal.cuisine_type}</span>
-                        <div className="flex items-center space-x-1"><DollarSign className="w-3 h-3 shrink-0" /><span>${meal.sale_price}</span></div>
+                        <div className="flex items-center space-x-1"><span>{renderPriceLevel(meal.sale_price)}</span><span>${meal.sale_price}</span></div>
                         <div className="flex items-center space-x-1"><MapPin className="w-3 h-3 shrink-0" /><span>{meal.distance} mi away</span></div>
                         <div className="flex items-center space-x-1"><Package className="w-3 h-3 shrink-0" /><span>{meal.portion_size} servings</span></div>
                       </div>
@@ -172,17 +216,37 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                           </div>
                         )}
 
-                        {(meal.ingredients || meal.nutritionInfo) && (
+                        {(meal.ingredients || meal.nutrition_info) && (
                           <div className="space-y-1 pt-2">
-                            {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}
-                            {meal.nutritionInfo && <div className="text-xs sm:text-sm"><span className="font-medium">Nutrition: </span><span className="text-muted-foreground">{meal.nutritionInfo}</span></div>}
+                          {meal.ingredients && (
+                          <div className="text-xs sm:text-sm">
+                            <span className="font-medium">Ingredients: </span>
+                            <span className="text-muted-foreground">{meal.ingredients}</span>
                           </div>
+                        )}
+
+                        {meal.nutrition_info && (
+                        <div className="text-xs sm:text-sm">
+                          <span className="font-medium">Nutrition: </span>
+                          <span className="text-muted-foreground">
+                          {meal.nutrition_info.calories} cal, {meal.nutrition_info.protein_grams}g protein, {meal.nutrition_info.carbs_grams}g carbs, {meal.nutrition_info.fat_grams}g fat
+                          </span>
+                        </div>
+                        )}
+                      </div>
+                          
                         )}
                       </div>
 
                       <div className="flex flex-col space-y-2 sm:space-y-3">
-                        <Button size="sm" variant="secondary" onClick={() => setSelectedMeal(meal)}>Rate Meal</Button>
-                        <Button size="sm" variant="destructive-outline" onClick={() => { setReportingMeal(meal); setReportDialogOpen(true); }}>Report</Button>
+                          <Button
+                            onClick={() => addToCart(meal)}
+                            className="cursor-pointer mt-3 bg-[#D9A299] hover:bg-[#d18e82] text-white px-4 py-2 rounded-lg"
+                          >
+                            Add to Cart
+                          </Button>
+                        <Button size="sm" variant="secondary" className="cursor-pointer" onClick={() => setSelectedMeal(meal)}>Rate Meal</Button>
+                        <Button size="sm" variant="destructive-outline" className="cursor-pointer bg-[#FAF7F3]" onClick={() => { setReportingMeal(meal); setReportDialogOpen(true); }}>Report</Button>
                       </div>
                     </div>
                   </div>
@@ -256,6 +320,42 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/** seller info dialog box */}
+      <Dialog open={sellerDialogOpen} onOpenChange={setSellerDialogOpen}>
+        <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{selectedSeller?.name || "Seller Info"}</DialogTitle>
+          <DialogDescription>Learn more about this seller</DialogDescription>
+        </DialogHeader>
+
+      {selectedSeller ? (
+        <div className="space-y-3">
+          <p><strong>Seller:</strong> {selectedSeller.full_name || "No name available."}</p>
+          <p><strong>Bio:</strong> {selectedSeller.bio || "No bio available."}</p>
+          <p><strong>Social Media:</strong> 
+            {selectedSeller.social_media?.facebook && ` FB: ${selectedSeller.social_media.facebook}`}
+            {selectedSeller.social_media?.instagram && ` IG: ${selectedSeller.social_media.instagram}`}
+            {selectedSeller.social_media?.twitter && ` TW: ${selectedSeller.social_media.twitter}`}
+          </p>
+          {selectedSeller.profile_picture && (
+            <img
+              src={selectedSeller.profile_picture}
+              alt={`${selectedSeller.name}'s profile`}
+              className="w-32 h-32 object-cover rounded-full border"
+            />
+          )}
+        </div>
+      ) : (
+        <p>Loading seller info...</p>
+      )}
+
+      <div className="flex justify-end mt-4">
+        <Button className="cursor-pointer" onClick={() => setSellerDialogOpen(false)}>Close</Button>
+      </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

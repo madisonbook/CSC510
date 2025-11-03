@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React from 'react';
+import { toast } from 'react-toastify';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -27,6 +28,7 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
       : [...array, item];
   };
 
+  // change cuisine preferences
   const handleCuisineToggle = (cuisine) => {
     onPreferencesChange({
       ...preferences,
@@ -34,6 +36,7 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
     });
   };
 
+  // change allergens
   const handleAllergenToggle = (allergen) => {
     onPreferencesChange({
       ...preferences,

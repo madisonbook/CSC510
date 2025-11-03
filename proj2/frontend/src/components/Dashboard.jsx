@@ -9,8 +9,10 @@ import { LogOut, Settings, User, Star } from 'lucide-react';
 import { PreferencesTab } from './PreferencesTab';
 import RecommendationsTab from './RecommendationsTab';
 import MyMealsTab from './MyMealsTab';
+import CartTab from './CartTab';
 import { useNavigate } from 'react-router-dom';
 import Profile from './Profile';
+import { toast } from 'react-toastify';
 
 
 export default function Dashboard({ onLogout }) {
@@ -124,10 +126,10 @@ export default function Dashboard({ onLogout }) {
 
   const savePreferences = () => {
     localStorage.setItem("preferences", JSON.stringify(preferences));
-    alert("preferences saved")
+    toast.success("Preferences saved!")
   };
 
-
+  // user ratings
   const [userRatings, setUserRatings] = useState({});
 
   const handleRateRestaurant = (restaurantId, rating, review) => {
@@ -137,7 +139,7 @@ export default function Dashboard({ onLogout }) {
     }));
   };
   
-
+  // add meal
   const handleAddMeal = (meal) => {
     const newMeal = {
       ...meal,
@@ -149,10 +151,52 @@ export default function Dashboard({ onLogout }) {
     setMyMeals(prev => [...prev, newMeal]);
   };
 
+  // delete meal
   const handleDeleteMeal = (mealId) => {
     setMyMeals(prev => prev.filter(m => m.id !== mealId));
   };
 
+  // initialize cart from localStorage
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem("cart");
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
+
+
+  // add meal to cart
+  const handleAddToCart = (meal) => {
+    console.log("Adding to cart:", meal);
+    toast.success("Meal added to cart");
+    setCart((prev) => {
+      if (prev.find((item) => item.id === meal.id)) return prev; // prevent duplicates
+      return [...prev, meal];
+    });
+  };
+
+  // remove meal from cart
+  const handleRemoveFromCart = (id) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const clearCart = () => setCart([]);
+
+  // swap meal
+  const handleSwapMeal = (mealId, selectedSwapMeal) => {
+  const updatedCart = cart.map((item) =>
+    item.id === mealId ? { ...item, selectedSwapMeal } : item
+  );
+  setCart(updatedCart); // React state updates instantly
+  localStorage.setItem("cart", JSON.stringify(updatedCart)); // optional persistence
+};
+
+  // get meal ids of meals that are already swapped as they should not be an option to swap again
+  const swappedMealIds = cart.filter(item => item.selectedSwapMeal).map(item => item.selectedSwapMeal.id);
+
+  // user ratings
   const getTotalRatings = () => Object.keys(userRatings).length;
 
   const getAverageRating = () => {
@@ -162,6 +206,7 @@ export default function Dashboard({ onLogout }) {
     return sum / ratings.length;
   };
 
+  // log user out
   const handleLogout = () => {
     localStorage.clear();
     if (onLogout) onLogout();
@@ -230,7 +275,7 @@ export default function Dashboard({ onLogout }) {
         </div>
 
         <Tabs defaultValue="browse" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4 h-auto">
+          <TabsList className="grid w-full max-w-8xl grid-cols-5 h-auto">
             <TabsTrigger
               value="browse"
               className="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-2 space-y-1 sm:space-y-0 text-xs sm:text-sm py-2 sm:py-2.5 transition-all duration-200"
@@ -246,7 +291,7 @@ export default function Dashboard({ onLogout }) {
             >
               <span className="text-base sm:text-lg">📋</span>
               <span className="hidden sm:inline">My Meals</span>
-              <span className="sm:hidden">Meals</span>
+              <span className="sm:hidden">My Meals</span>
             </TabsTrigger>
 
             <TabsTrigger
@@ -265,6 +310,15 @@ export default function Dashboard({ onLogout }) {
               <span className="hidden lg:inline">Preferences</span>
               <span className="lg:hidden">Settings</span>
             </TabsTrigger>
+
+            <TabsTrigger
+              value="cart"
+              className="flex flex-col sm:flex-row items-center space-x-0 sm:space-x-2 space-y-1 sm:space-y-0 text-xs sm:text-sm py-2 sm:py-2.5 transition-all duration-200"
+            >
+              <span className="text-base sm:text-lg">🛒</span>
+              <span className="hidden sm:inline">Meal Cart ({cart.length})</span>
+              <span className="sm:hidden">Cart ({cart.length})</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="browse">
@@ -273,6 +327,8 @@ export default function Dashboard({ onLogout }) {
               userRatings={userRatings}
               onRateRestaurant={handleRateRestaurant}
               userLocation={preferences.userLocation}
+              addToCart={handleAddToCart}
+              currentUserId={userId}
             />
           </TabsContent>
 
@@ -313,6 +369,17 @@ export default function Dashboard({ onLogout }) {
               preferences={preferences}
               onPreferencesChange={setPreferences}
               onSave={savePreferences}
+            />
+          </TabsContent>
+
+          <TabsContent value="cart">
+            <CartTab 
+              cart={cart} 
+              onRemoveFromCart={handleRemoveFromCart} 
+              handleSwapMeal={handleSwapMeal}
+              onUpdateSwap={handleSwapMeal}
+              swappedMealIds={swappedMealIds}
+              clearCart={clearCart}
             />
           </TabsContent>
         </Tabs>

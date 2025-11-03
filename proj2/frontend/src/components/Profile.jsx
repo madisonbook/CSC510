@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // adjust your import
 import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 export default function Profile({ user, onUpdate }) {
   const navigate = useNavigate();
@@ -77,12 +78,12 @@ export default function Profile({ user, onUpdate }) {
       if (!res.ok) throw new Error("Failed to update profile");
 
       const updatedUser = await res.json();
-      alert("Profile updated!");
+      toast.success("Profile updated!");
       if (onUpdate) onUpdate(updatedUser);
       setIsEditing(false); 
     } catch (err) {
       console.error(err);
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -97,14 +98,19 @@ export default function Profile({ user, onUpdate }) {
         },
       });
       if (!res.ok) throw new Error("Failed to delete account");
-      alert("Account deleted!");
+      toast.success("Account deleted!");
       localStorage.clear();
       navigate("/");
     } catch (err) {
       console.error(err);
-      alert("Error deleting account");
+      toast.error("Error deleting account");
     }
   };
+
+  if (!user) {
+    return <p>Loading profile...</p>;
+  }
+
 
   return (
      
@@ -126,7 +132,7 @@ export default function Profile({ user, onUpdate }) {
 
           {!isEditing ? (
             <div className="space-y-2">
-              <p><strong>Full Name:</strong> {user.full_name}</p>
+              <p><strong>Full Name:</strong> {user?.full_name || "Guest"}</p>
               <p><strong>Email:</strong> {user.email}</p>
               <p><strong>Phone:</strong> {user.phone || "-"}</p>
               <p><strong>Bio:</strong> {user.bio || "-"}</p>

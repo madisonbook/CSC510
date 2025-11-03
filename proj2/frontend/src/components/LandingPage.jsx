@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
-//import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useNavigate } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 
 function LandingPage({ onAuthSuccess }) {
@@ -26,12 +26,15 @@ function LandingPage({ onAuthSuccess }) {
   const [profilePicture, setProfilePicture] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [showResend, setShowResend] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState("");
   const backendURL = "http://localhost:8000";
 
+  // log user in
   const handleLogin = async (e) => {
     e.preventDefault();
     // validate credentials
-    if (!loginEmail || !loginPassword) return alert("Enter email and password");
+    if (!loginEmail || !loginPassword) return toast.error("Enter email and password");
 
     setLoading(true);
 
@@ -51,41 +54,67 @@ function LandingPage({ onAuthSuccess }) {
         localStorage.setItem("email",data.email);
         navigate("/dashboard");
       } else if (response.status == 403 && data.detail?.includes("verify your email")) {
-        // handle unverified account
-        const resend = window.confirm(
-          "Your email is not verified. Would you like to resend the verification email?"
-        );
+          // show toast notif with resend email verification button
+          toast.info( 
+            <div>
+              <p>Your email is not verified. Please click to resend your verification email to gain access to your account.</p>
+              <Button
+                onClick={async () => {
+                  try {
+                    const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}&account_type=user`,
+                    { method: "POST" });
+                    const resendData = await resendResponse.json();
 
-        if (resend){
-          const resendResponse = await fetch(`${backendURL}/api/auth/resend-verification?email=${encodeURIComponent(loginEmail)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: loginEmail }),
-          });
-
-          const resendData = await resendResponse.json();
-          if (resendResponse.ok) {
-            alert(resendData.message || "Verification email sent successfully. Please check your inbox.");
-          } else {
-            alert(resendData.detail || "Failed to send verification email.");
-          }
-        }
-      } else {
-        alert(data.detail || data.message || "Login failed. Please try again.");
+                    if(resendResponse.ok){
+                      toast.success(resendData.message || "Verification email sent successfully. Please check your inbox.");
+                    } else {
+                      toast.error(resendData.detail || "Failed to send verification email");
+                    }
+                  } catch (resendError) {
+                    console.error("Resend Error: ", resendError);
+                    toast.error("Error sending verification email. Please try again.");
+                  }
+                }}
+                style={{
+                  background: "#4f46e5",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "6px 12px",
+                  marginTop: "8px",
+                  cursor: "pointer",
+                }}
+                >
+                  Resend Verification Email
+                </Button>
+            </div>,
+            { autoClose: false}
+          );
+        } else {
+          toast.error(data.detail || data.message || "Login failed. Please try again.");
+        } 
+      } catch (error) {
+        console.error("Login error: , error");
+        toast.error("Error connecting to backend");
+      } finally {
+        setLoading(false);
       }
-    }  catch (err) {
-      console.error("Login error:", err);
-      alert("Error connecting to backend");
-    } finally {
-      setLoading(false);
-    }
   };
 
+  // sign up user
   const handleSignup = async (e) => {
     e.preventDefault();
-    // create user account
-    if (!signupEmail || !signupPassword || !signupName) return alert("Fill in all fields");
+    if (!signupEmail || !signupPassword || !signupName) return toast.error("Please fill in all fields");
 
+    // password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+      if (!passwordRegex.test(signupPassword)) {
+        return toast.error(
+          "Password must be at least 8 characters long, include at least 1 uppercase letter, 1 lowercase letter, & 1 number"
+        );
+      }
+
+    // create user account
     setLoading(true);
     try {
       const response = await fetch(`${backendURL}/api/auth/register/user`, {
@@ -113,18 +142,18 @@ function LandingPage({ onAuthSuccess }) {
         localStorage.setItem("userId", data.user_id);
         localStorage.setItem("email", data.email);
         localStorage.setItem("fullName", signupName);
-        alert(data.message || "Account created successfully. Please verify your email.");
+        toast.success(data.message || "Account created successfully. Please verify your email.");
         navigate("/dashboard");
       } else {
-        alert(data.detail || data.message || "Signup failed. Please try again.");
+        toast.error(data.detail || data.message || "Signup failed. Please try again.");
       }
     } catch (err) {
       console.error("Signup error:", err);
-      alert("Error connecting to backend");
+      toast.error("Error connecting to backend");
     } finally {
       setLoading(false);
     }
-  };
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/50 to-accent/30">
@@ -164,7 +193,7 @@ function LandingPage({ onAuthSuccess }) {
             
             <div className="space-y-4 sm:space-y-6">
               <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight max-w-6xl mx-auto font-serif">
-                Share & Swap
+                Buy & Swap
                 <span className="block text-primary italic font-medium">
                   Homemade Meals
                 </span>
@@ -174,7 +203,7 @@ function LandingPage({ onAuthSuccess }) {
             
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto font-sans font-light px-4">
               Buy, sell, or swap delicious homemade meals with your neighbors. 
-              <span className="text-foreground font-medium">Support your community</span> while enjoying authentic home-cooked food.
+              <span className="text-foreground font-medium"> Support your community</span> while enjoying authentic home-cooked food.
             </p>
           </div>
 
@@ -205,8 +234,8 @@ function LandingPage({ onAuthSuccess }) {
             <CardContent className="p-6 sm:p-10">
               <Tabs defaultValue="signup" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-8 bg-secondary/50 h-12">
-                  <TabsTrigger value="signup" className=" data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
-                  <TabsTrigger value="login" className=" data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
+                  <TabsTrigger value="signup" className="cursor-pointer data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Sign Up</TabsTrigger>
+                  <TabsTrigger value="login" className="cursor-pointer data-[state=active]:bg-white data-[state=active]:shadow-sm font-sans font-medium">Login</TabsTrigger>
                 </TabsList>
 
                 {/* Signup Form */}                
@@ -402,19 +431,19 @@ function LandingPage({ onAuthSuccess }) {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 md:gap-12 lg:gap-16">
             <div className="group text-center space-y-6 sm:space-y-8 p-6 sm:p-8 md:p-10 rounded-3xl bg-white/80 backdrop-blur-sm border border-primary/10 hover:bg-white/95 hover:border-primary/20 transition-all duration-500">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--dusty-rose)', opacity: '0.15' }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--dusty-rose)', opacity: '0.75' }}>
                   <span className="text-3xl sm:text-4xl">🏘️</span>
                 </div>
               </div>
               <div className="space-y-3 sm:space-y-4">
                 <h3 className="text-xl sm:text-2xl font-serif font-semibold text-primary">Browse Local Meals</h3>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-sans">Discover delicious homemade meals available in your neighborhood based on your preferences</p>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-sans">Discover delicious homemade meals available in your area based on your preferences</p>
               </div>
             </div>
             
             <div className="group text-center space-y-6 sm:space-y-8 p-6 sm:p-8 md:p-10 rounded-3xl bg-white/80 backdrop-blur-sm border border-primary/10 hover:bg-white/95 hover:border-primary/20 transition-all duration-500">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--soft-taupe)', opacity: '0.2' }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--soft-taupe)', opacity: '0.75' }}>
                   <span className="text-3xl sm:text-4xl">🔄</span>
                 </div>
               </div>
@@ -426,7 +455,7 @@ function LandingPage({ onAuthSuccess }) {
             
             <div className="group text-center space-y-6 sm:space-y-8 p-6 sm:p-8 md:p-10 rounded-3xl bg-white/80 backdrop-blur-sm border border-primary/10 hover:bg-white/95 hover:border-primary/20 transition-all duration-500">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--rich-rose)', opacity: '0.12' }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--rich-rose)', opacity: '0.75' }}>
                   <span className="text-3xl sm:text-4xl">🏆</span>
                 </div>
               </div>
@@ -437,12 +466,68 @@ function LandingPage({ onAuthSuccess }) {
             </div>
           </div>
         </div>
+
+
+        {/* Success Stories Section */}
+        <div className="mt-20 mb-32 px-4 text-center max-w-7xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-semibold tracking-tight mb-8">
+            Success Stories
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-sans leading-relaxed">
+            Hear from our amazing community members who have shared and enjoyed homemade meals.
+          </p>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 md:gap-12">
+          {/* Story Card 1 */}
+          <div className="bg-white/80 backdrop-blur-sm border border-primary/10 rounded-3xl p-6 sm:p-8 hover:bg-white/95 transition-all duration-500">
+          <div className="flex items-center space-x-4 mb-4">
+            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="User" className="w-12 h-12 rounded-full object-cover"/>
+            <div className="text-left">
+              <h3 className="font-serif font-semibold text-primary text-lg">Angie R.</h3>
+              <span className="text-xs sm:text-sm text-muted-foreground">Home Cook</span>
+            </div>
+          </div>
+            <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+              "Taste Buddiez helped me sell my homemade meals to neighbors easily! I love being part of this community."
+            </p>
+          </div>
+
+          {/* Story Card 2 */}
+          <div className="bg-white/80 backdrop-blur-sm border border-primary/10 rounded-3xl p-6 sm:p-8 hover:bg-white/95 transition-all duration-500">
+          <div className="flex items-center space-x-4 mb-4">
+            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" className="w-12 h-12 rounded-full object-cover"/>
+            <div className="text-left">
+              <h3 className="font-serif font-semibold text-primary text-lg">Michael S.</h3>
+              <span className="text-xs sm:text-sm text-muted-foreground">Meal Enthusiast</span>
+            </div>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+            "I discovered so many amazing meals nearby! The platform is user-friendly and trustworthy."
+          </p>
+          </div>
+
+          {/* Story Card 3 */}
+          <div className="bg-white/80 backdrop-blur-sm border border-primary/10 rounded-3xl p-6 sm:p-8 hover:bg-white/95 transition-all duration-500">
+          <div className="flex items-center space-x-4 mb-4">
+            <img src="https://randomuser.me/api/portraits/women/45.jpg" alt="User" className="w-12 h-12 rounded-full object-cover"/>
+            <div className="text-left">
+              <h3 className="font-serif font-semibold text-primary text-lg">Sophia L.</h3>
+              <span className="text-xs sm:text-sm text-muted-foreground">Home Chef</span>
+            </div>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+            "Selling my baked goods has never been easier! I’ve met wonderful neighbors and gained loyal customers."
+          </p>
+          </div>
+          </div>
+        </div>
+
         
         {/* Social Proof */}
         <div className="relative py-12 sm:py-16 md:py-20 border-t border-primary/10 overflow-hidden">
-          <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 opacity-20">
             <img 
-              src="https://images.unsplash.com/photo-1752760023161-c2b5d8edd1a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjBraXRjaGVuJTIwY29va2luZ3xlbnwxfHx8fDE3NTk5MzkyMjB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+              src="https://www.dole.com/sites/default/files/media/featured-article-home-cooking-1338x460.jpeg"
               alt="Community cooking"
               className="w-full h-full object-cover"
             />
@@ -464,6 +549,59 @@ function LandingPage({ onAuthSuccess }) {
             </div>
           </div>
         </div>
+
+
+        {/* Partners & Collaborators Section */}
+        <div className="mt-20 mb-32 px-4 text-center max-w-7xl mx-auto">
+          <h2 className="text-primary text-3xl sm:text-4xl md:text-5xl font-serif font-semibold tracking-tight mb-8">
+            Our Partners & Collaborators
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-sans leading-relaxed">
+            We collaborate with trusted organizations to bring you the best homemade meals.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Madison Book</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Alice Guth</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Cynthia Espinoza-Arredondo</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Griffin Pitts</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Local Community Centers</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Local Neighborhoods</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Community Kitchens</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Neighborhood Associations</p>
+            </div>
+        </div>
+        </div>
+
+
+        {/* Footer / Copyright Section */}
+        <footer className="bg-primary/10 backdrop-blur-sm border-t border-primary/20 py-6 mt-16">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left space-y-2 sm:space-y-0">
+          <span className="text-sm sm:text-base text-muted-foreground">
+            &copy; {new Date().getFullYear()} Taste Buddiez. Developed by Madison Book, Alice Guth, Cynthia Espinoza-Arredondo, & Griffin Pitts. All rights reserved.
+          </span>
+          <p className="text-xs sm:text-sm text-muted-foreground font-sans">
+            Licensed under the MIT License. 
+          </p>
+        </div>
+        </footer>
+
+
       </div>
     </div>
   );
