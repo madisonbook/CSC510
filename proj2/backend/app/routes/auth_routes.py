@@ -226,6 +226,12 @@ async def login(credentials: UserLogin):
             "full_name": user["full_name"]
         }
     
+    # handle user not found
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect email or password"
+    )
+    
 
 # End point just for testing
 @router.get("/api/debug/users")
