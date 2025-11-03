@@ -11,7 +11,7 @@ database = None
 
 async def connect_to_mongo():
     global client, database
-    client = AsyncIOMotorClient(MONGODB_URL, server_api=ServerApi('1'))
+    client = AsyncIOMotorClient(MONGODB_URL, server_api=ServerApi("1"))
     database = client[DATABASE_NAME]
     print(f"Connected to MongoDB at {MONGODB_URL}")
 

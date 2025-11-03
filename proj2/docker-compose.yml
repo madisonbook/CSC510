@@ -1,6 +1,15 @@
 version: '3.9'
 
 services:
+
+  format:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    command: black .
+    volumes:
+      - .:/app
+
   # Test MongoDB - separate from production
   test-mongo:
     image: mongo:6.0

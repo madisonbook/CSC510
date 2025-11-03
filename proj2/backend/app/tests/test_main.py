@@ -2,6 +2,7 @@
 Comprehensive tests for main.py
 Tests application lifecycle, routes, middleware, and database initialization
 """
+
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -16,21 +17,22 @@ TEST_DB_NAME = "test_meal_db"
 # FIXTURES
 # ============================================================
 
+
 @pytest_asyncio.fixture
 async def async_client(mongo_client):
     """Create async test client"""
     from app.main import app
     from app.database import get_database
-    
+
     # Override the database dependency for testing
     async def override_get_database():
         return mongo_client[TEST_DB_NAME]
-    
+
     app.dependency_overrides[get_database] = override_get_database
-    
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
-    
+
     app.dependency_overrides.clear()
 
 
@@ -38,6 +40,7 @@ async def async_client(mongo_client):
 def sync_client():
     """Create synchronous test client for simple tests"""
     from app.main import app
+
     return TestClient(app)
 
 
@@ -45,11 +48,12 @@ def sync_client():
 # ROOT ENDPOINT TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_root_endpoint(async_client):
     """Test GET / returns welcome message"""
     response = await async_client.get("/")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert "message" in data
@@ -61,7 +65,7 @@ async def test_root_endpoint(async_client):
 def test_root_endpoint_sync(sync_client):
     """Test GET / with synchronous client"""
     response = sync_client.get("/")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["message"] == "Welcome to Taste Buddiez API"
@@ -72,11 +76,12 @@ def test_root_endpoint_sync(sync_client):
 # HEALTH CHECK ENDPOINT TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_health_check_endpoint(async_client):
     """Test GET /health returns healthy status"""
     response = await async_client.get("/health")
-    
+
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
@@ -85,7 +90,7 @@ async def test_health_check_endpoint(async_client):
 def test_health_check_sync(sync_client):
     """Test health check with synchronous client"""
     response = sync_client.get("/health")
-    
+
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
 
@@ -94,11 +99,11 @@ def test_health_check_sync(sync_client):
 async def test_health_check_fast_response(async_client):
     """Test that health check responds quickly"""
     import time
-    
+
     start = time.time()
     response = await async_client.get("/health")
     duration = time.time() - start
-    
+
     assert response.status_code == 200
     assert duration < 1.0  # Should respond in less than 1 second
 
@@ -107,17 +112,18 @@ async def test_health_check_fast_response(async_client):
 # APPLICATION METADATA TESTS
 # ============================================================
 
+
 def test_app_title():
     """Test that FastAPI app has correct title"""
     from app.main import app
-    
+
     assert app.title == "Taste Buddies API"
 
 
 def test_app_description():
     """Test that FastAPI app has correct description"""
     from app.main import app
-    
+
     assert "FastAPI" in app.description
     assert "MongoDB" in app.description
     assert "React" in app.description
@@ -126,7 +132,7 @@ def test_app_description():
 def test_app_version():
     """Test that FastAPI app has version"""
     from app.main import app
-    
+
     assert app.version == "1.0.0"
 
 
@@ -134,21 +140,24 @@ def test_app_version():
 # ROUTER INCLUSION TESTS
 # ============================================================
 
+
 def test_routers_are_included():
     """Test that all routers are included in the app"""
     from app.main import app
-    
-    route_paths = [route.path for route in app.routes if hasattr(route, 'path')]
-    
-    has_auth = any('/api/auth' in path for path in route_paths)
-    has_users = any('/api/users' in path for path in route_paths)
-    has_meals = any('/api/meals' in path for path in route_paths)
-    
+
+    route_paths = [route.path for route in app.routes if hasattr(route, "path")]
+
+    has_auth = any("/api/auth" in path for path in route_paths)
+    has_users = any("/api/users" in path for path in route_paths)
+    has_meals = any("/api/meals" in path for path in route_paths)
+
     assert has_auth and has_users and has_meals
+
 
 # ============================================================
 # CORS MIDDLEWARE TESTS
 # ============================================================
+
 
 @pytest.mark.asyncio
 async def test_cors_headers_present(async_client):
@@ -157,22 +166,23 @@ async def test_cors_headers_present(async_client):
         "/health",
         headers={
             "Origin": "http://localhost:3000",
-            "Access-Control-Request-Method": "GET"
-        }
+            "Access-Control-Request-Method": "GET",
+        },
     )
-    
+
     # Check for CORS headers
-    assert "access-control-allow-origin" in response.headers or response.status_code == 200
+    assert (
+        "access-control-allow-origin" in response.headers or response.status_code == 200
+    )
 
 
 @pytest.mark.asyncio
 async def test_cors_allows_all_origins(async_client):
     """Test that CORS allows requests from any origin"""
     response = await async_client.get(
-        "/health",
-        headers={"Origin": "http://example.com"}
+        "/health", headers={"Origin": "http://example.com"}
     )
-    
+
     assert response.status_code == 200
 
 
@@ -180,12 +190,12 @@ def test_cors_middleware_configured():
     """Test that CORS middleware is added to app"""
     from app.main import app
     from fastapi.middleware.cors import CORSMiddleware
-    
+
     # Check if CORSMiddleware is in the middleware stack
     middleware_types = [type(m) for m in app.user_middleware]
-    
+
     # The middleware might be wrapped, so check the string representation
-    has_cors = any('CORS' in str(m) for m in app.user_middleware)
+    has_cors = any("CORS" in str(m) for m in app.user_middleware)
     assert has_cors or len(app.user_middleware) > 0
 
 
@@ -193,11 +203,12 @@ def test_cors_middleware_configured():
 # DATABASE INITIALIZATION TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_database_connection(mongo_client):
     """Test that database connection works"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Try a simple operation
     result = await db.command("ping")
     assert result["ok"] == 1.0
@@ -207,25 +218,25 @@ async def test_database_connection(mongo_client):
 async def test_user_email_index_exists(mongo_client):
     """Test that users collection has unique email index"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Create the index (idempotent operation)
     await db.users.create_index([("email", 1)], unique=True)
-    
+
     # Get all indexes
     indexes = await db.users.index_information()
-    
+
     # Check if email index exists by looking at the key tuples
     email_index_exists = False
     for idx_name, idx_info in indexes.items():
-        key = idx_info.get('key', [])
+        key = idx_info.get("key", [])
         # key is a list of tuples like [('email', 1)]
         for field_tuple in key:
-            if field_tuple[0] == 'email':
+            if field_tuple[0] == "email":
                 email_index_exists = True
                 break
         if email_index_exists:
             break
-    
+
     assert email_index_exists
 
 
@@ -233,23 +244,23 @@ async def test_user_email_index_exists(mongo_client):
 async def test_meal_indexes_exist(mongo_client):
     """Test that meals collection has required indexes"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Create indexes
     await db.meals.create_index([("seller_id", 1)])
     await db.meals.create_index([("status", 1)])
     await db.meals.create_index([("cuisine_type", 1)])
     await db.meals.create_index([("created_at", 1)])
-    
+
     # Get all indexes
     indexes = await db.meals.index_information()
-    
+
     # Check for key indexes
     index_fields = set()
     for idx_name, idx_info in indexes.items():
-        key = idx_info.get('key', [])
+        key = idx_info.get("key", [])
         for field_tuple in key:
             index_fields.add(field_tuple[0])
-    
+
     assert "seller_id" in index_fields
     assert "status" in index_fields
     assert "cuisine_type" in index_fields
@@ -260,22 +271,22 @@ async def test_meal_indexes_exist(mongo_client):
 async def test_review_indexes_exist(mongo_client):
     """Test that reviews collection has required indexes"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Create indexes
     await db.reviews.create_index([("meal_id", 1)])
     await db.reviews.create_index([("reviewer_id", 1)])
     await db.reviews.create_index([("seller_id", 1)])
-    
+
     # Get all indexes
     indexes = await db.reviews.index_information()
-    
+
     # Check for key indexes
     index_fields = set()
     for idx_name, idx_info in indexes.items():
-        key = idx_info.get('key', [])
+        key = idx_info.get("key", [])
         for field_tuple in key:
             index_fields.add(field_tuple[0])
-    
+
     assert "meal_id" in index_fields
     assert "reviewer_id" in index_fields
     assert "seller_id" in index_fields
@@ -285,27 +296,24 @@ async def test_review_indexes_exist(mongo_client):
 async def test_verification_token_ttl_index(mongo_client):
     """Test that verification_tokens has TTL index"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Create TTL index
-    await db.verification_tokens.create_index(
-        [("expires_at", 1)],
-        expireAfterSeconds=0
-    )
-    
+    await db.verification_tokens.create_index([("expires_at", 1)], expireAfterSeconds=0)
+
     # Get all indexes
     indexes = await db.verification_tokens.index_information()
-    
+
     # Check for expires_at index
     has_ttl = False
     for idx_name, idx_info in indexes.items():
-        key = idx_info.get('key', [])
+        key = idx_info.get("key", [])
         for field_tuple in key:
-            if field_tuple[0] == 'expires_at':
+            if field_tuple[0] == "expires_at":
                 has_ttl = True
                 break
         if has_ttl:
             break
-    
+
     assert has_ttl
 
 
@@ -313,38 +321,48 @@ async def test_verification_token_ttl_index(mongo_client):
 async def test_email_uniqueness_constraint(mongo_client):
     """Test that duplicate email insertion fails"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Ensure index exists
     await db.users.create_index([("email", 1)], unique=True)
-    
+
     user1 = {
         "email": "duplicate@example.com",
         "full_name": "User One",
-        "location": {"address": "123 St", "city": "City", "state": "ST", "zip_code": "12345"},
+        "location": {
+            "address": "123 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "12345",
+        },
         "role": "user",
         "status": "active",
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
     }
-    
+
     user2 = {
         "email": "duplicate@example.com",  # Same email
         "full_name": "User Two",
-        "location": {"address": "456 St", "city": "City", "state": "ST", "zip_code": "12345"},
+        "location": {
+            "address": "456 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "12345",
+        },
         "role": "user",
         "status": "active",
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
     }
-    
+
     # Insert first user
     result1 = await db.users.insert_one(user1)
     assert result1.inserted_id is not None
-    
+
     # Try to insert duplicate - should fail
     with pytest.raises(Exception) as exc_info:
         await db.users.insert_one(user2)
-    
+
     assert "duplicate" in str(exc_info.value).lower() or "E11000" in str(exc_info.value)
-    
+
     # Cleanup
     await db.users.delete_one({"_id": result1.inserted_id})
 
@@ -353,11 +371,12 @@ async def test_email_uniqueness_constraint(mongo_client):
 # ERROR HANDLING TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_404_on_invalid_route(async_client):
     """Test that invalid routes return 404"""
     response = await async_client.get("/invalid/route/that/does/not/exist")
-    
+
     assert response.status_code == 404
 
 
@@ -366,43 +385,42 @@ async def test_405_on_wrong_method(async_client):
     """Test that wrong HTTP method returns 405"""
     # Health endpoint only allows GET
     response = await async_client.post("/health")
-    
+
     assert response.status_code == 405
-
-
 
 
 # ============================================================
 # LIFESPAN TESTS
 # ============================================================
 
+
 def test_app_has_lifespan_handler():
     """Test that app has lifespan context manager configured"""
     from app.main import app
-    
+
     # Check that lifespan is configured
-    assert hasattr(app.router, 'lifespan_context') or app.router.lifespan_context is not None
+    assert (
+        hasattr(app.router, "lifespan_context")
+        or app.router.lifespan_context is not None
+    )
 
 
 @pytest.mark.asyncio
 async def test_database_operations_after_startup(mongo_client):
     """Test that database operations work after startup"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Insert a test document
-    test_doc = {
-        "test": "data",
-        "timestamp": datetime.utcnow()
-    }
-    
+    test_doc = {"test": "data", "timestamp": datetime.utcnow()}
+
     result = await db.test_collection.insert_one(test_doc)
     assert result.inserted_id is not None
-    
+
     # Read it back
     found = await db.test_collection.find_one({"_id": result.inserted_id})
     assert found is not None
     assert found["test"] == "data"
-    
+
     # Cleanup
     await db.test_collection.delete_one({"_id": result.inserted_id})
 
@@ -411,17 +429,18 @@ async def test_database_operations_after_startup(mongo_client):
 # INTEGRATION TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_full_request_cycle(async_client):
     """Test a complete request/response cycle"""
     # Test root endpoint
     root_response = await async_client.get("/")
     assert root_response.status_code == 200
-    
+
     # Test health check
     health_response = await async_client.get("/health")
     assert health_response.status_code == 200
-    
+
     # Both should return JSON
     assert root_response.headers["content-type"] == "application/json"
     assert health_response.headers["content-type"] == "application/json"
@@ -431,7 +450,7 @@ async def test_full_request_cycle(async_client):
 async def test_concurrent_requests(async_client):
     """Test handling multiple concurrent requests"""
     import asyncio
-    
+
     # Make multiple concurrent requests
     tasks = [
         async_client.get("/health"),
@@ -439,9 +458,9 @@ async def test_concurrent_requests(async_client):
         async_client.get("/health"),
         async_client.get("/"),
     ]
-    
+
     responses = await asyncio.gather(*tasks)
-    
+
     # All should succeed
     for response in responses:
         assert response.status_code == 200
@@ -451,7 +470,7 @@ async def test_concurrent_requests(async_client):
 async def test_request_with_query_parameters(async_client):
     """Test that query parameters are handled correctly"""
     response = await async_client.get("/?param1=value1&param2=value2")
-    
+
     assert response.status_code == 200
 
 
@@ -460,12 +479,9 @@ async def test_request_with_headers(async_client):
     """Test that custom headers are handled correctly"""
     response = await async_client.get(
         "/health",
-        headers={
-            "X-Custom-Header": "test-value",
-            "User-Agent": "test-client"
-        }
+        headers={"X-Custom-Header": "test-value", "User-Agent": "test-client"},
     )
-    
+
     assert response.status_code == 200
 
 
@@ -473,11 +489,12 @@ async def test_request_with_headers(async_client):
 # DOCUMENTATION TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_openapi_schema_accessible(async_client):
     """Test that OpenAPI schema is accessible"""
     response = await async_client.get("/openapi.json")
-    
+
     assert response.status_code == 200
     schema = response.json()
     assert "openapi" in schema
@@ -489,7 +506,7 @@ async def test_openapi_schema_accessible(async_client):
 async def test_docs_endpoint_accessible(async_client):
     """Test that API docs are accessible"""
     response = await async_client.get("/docs")
-    
+
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
 
@@ -498,7 +515,7 @@ async def test_docs_endpoint_accessible(async_client):
 async def test_redoc_endpoint_accessible(async_client):
     """Test that ReDoc documentation is accessible"""
     response = await async_client.get("/redoc")
-    
+
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
 
@@ -507,18 +524,19 @@ async def test_redoc_endpoint_accessible(async_client):
 # PERFORMANCE TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_response_time_acceptable(async_client):
     """Test that endpoints respond within acceptable time"""
     import time
-    
+
     endpoints = ["/", "/health"]
-    
+
     for endpoint in endpoints:
         start = time.time()
         response = await async_client.get(endpoint)
         duration = time.time() - start
-        
+
         assert response.status_code == 200
         assert duration < 0.5  # Should respond in less than 500ms
 
@@ -536,35 +554,38 @@ async def test_multiple_sequential_requests(async_client):
 # STARTUP EVENT TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_indexes_created_on_startup(mongo_client):
     """Test that all required indexes are created on startup"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Simulate startup
     from pymongo import ASCENDING
-    
+
     # Users
     await db.users.create_index([("email", ASCENDING)], unique=True)
-    
+
     # Meals
     await db.meals.create_index([("seller_id", ASCENDING)])
     await db.meals.create_index([("status", ASCENDING)])
     await db.meals.create_index([("cuisine_type", ASCENDING)])
     await db.meals.create_index([("created_at", ASCENDING)])
-    
+
     # Reviews
     await db.reviews.create_index([("meal_id", ASCENDING)])
     await db.reviews.create_index([("reviewer_id", ASCENDING)])
     await db.reviews.create_index([("seller_id", ASCENDING)])
-    
+
     # Verification tokens
-    await db.verification_tokens.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0)
+    await db.verification_tokens.create_index(
+        [("expires_at", ASCENDING)], expireAfterSeconds=0
+    )
     await db.verification_tokens.create_index([("email", ASCENDING)])
-    
+
     # Verify all collections exist
     collections = await db.list_collection_names()
-    
+
     # We should have created indexes (collections will exist)
     assert len(collections) >= 0  # Collections created when indexes are created
 
@@ -573,11 +594,11 @@ async def test_indexes_created_on_startup(mongo_client):
 async def test_startup_with_existing_indexes(mongo_client):
     """Test that startup handles existing indexes gracefully"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Create indexes twice (should be idempotent)
     await db.users.create_index([("email", 1)], unique=True)
     await db.users.create_index([("email", 1)], unique=True)
-    
+
     # Should not raise an error
     indexes = await db.users.index_information()
     assert len(indexes) >= 1
@@ -587,10 +608,10 @@ async def test_startup_with_existing_indexes(mongo_client):
 # CONTENT TYPE TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_json_response_content_type(async_client):
     """Test that JSON responses have correct content-type"""
     response = await async_client.get("/")
-    
-    assert "application/json" in response.headers["content-type"]
 
+    assert "application/json" in response.headers["content-type"]
