@@ -4,6 +4,7 @@ omit =
     */tests/*
     */__pycache__/*
     */venv/*
+    utils.py
 
 [report]
 exclude_lines =

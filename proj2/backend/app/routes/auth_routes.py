@@ -163,7 +163,7 @@ async def resend_verification(email: str, account_type: str = "user"):
     collection = db.users
     email_field = "email"
     
-    account = collection.find_one({email_field: email})
+    account = await collection.find_one({email_field: email})
     if not account:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

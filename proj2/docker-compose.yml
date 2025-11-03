@@ -68,12 +68,12 @@ services:
     profiles:
       - test
 
-  # Run integration tests
-  test-integration:
+  # Run main app tests
+  test-main:
     build:
       context: ./backend
       dockerfile: Dockerfile.test
-    container_name: test_integration
+    container_name: test_main
     depends_on:
       test-mongo:
         condition: service_healthy
@@ -89,10 +89,10 @@ services:
       - ./backend/htmlcov:/app/htmlcov
     networks:
       - test-network
-    command: pytest app/tests/test_integration.py -v --tb=short --color=yes -m "integration or system"
+    command: pytest app/tests/test_main.py -v --tb=short --color=yes
     profiles:
       - test
-
+      
   # Run ALL tests with coverage
   test-all:
     build:

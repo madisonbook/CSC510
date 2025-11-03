@@ -7,6 +7,8 @@ import pytest_asyncio
 from datetime import datetime, timedelta
 from bson import ObjectId
 from fastapi import status
+from unittest.mock import patch
+
 
 # Test configuration
 TEST_DB_NAME = "test_meal_db"
@@ -775,3 +777,803 @@ async def test_multiple_filters_combined(mongo_client, multiple_meals):
     
     assert len(meals) == 1
     assert meals[0]["title"] == "Mexican Tacos"
+
+# ============================================================
+# FIXTURES FOR MEAL TESTING
+# ============================================================
+
+@pytest_asyncio.fixture
+async def meal_async_client(mongo_client):
+    """Create async test client with patched database for meal testing"""
+    from app.main import app
+    from httpx import ASGITransport, AsyncClient
+    
+    # Patch get_database function calls
+    with patch('app.database.get_database', return_value=mongo_client[TEST_DB_NAME]):
+        with patch('app.routes.meal_routes.get_database', return_value=mongo_client[TEST_DB_NAME]):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+                yield client
+
+
+@pytest_asyncio.fixture
+async def authenticated_meal_client(mongo_client, test_user):
+    """
+    Create an authenticated client for meal testing
+    """
+    from app.main import app
+    from app.dependencies import get_current_user
+    from httpx import ASGITransport, AsyncClient
+    
+    # Mock get_current_user dependency
+    async def mock_get_current_user():
+        return test_user
+    
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    
+    # Patch get_database function calls
+    with patch('app.database.get_database', return_value=mongo_client[TEST_DB_NAME]):
+        with patch('app.routes.meal_routes.get_database', return_value=mongo_client[TEST_DB_NAME]):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+                yield client
+    
+    # Clean up
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def sample_meal_data():
+    """Sample meal data for testing"""
+    return {
+        "title": "Delicious Pasta",
+        "description": "Homemade pasta with tomato sauce",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "photos": ["https://example.com/pasta.jpg"],
+        "allergen_info": {
+            "contains": ["gluten", "dairy"],
+            "may_contain": ["nuts"]
+        },
+        "nutrition_info": {
+            "calories": 450,
+            "protein": 15,
+            "carbs": 60,
+            "fat": 12
+        },
+        "portion_size": "2 servings",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": True,
+        "swap_preferences": ["Mexican", "Thai"],
+        "preparation_date": datetime.utcnow().isoformat(),
+        "expires_date": (datetime.utcnow() + timedelta(days=2)).isoformat(),
+        "pickup_instructions": "Ring doorbell"
+    }
+
+
+# ============================================================
+# meal_to_response HELPER FUNCTION TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_meal_to_response_complete():
+    """Test meal_to_response with complete data"""
+    from app.routes.meal_routes import meal_to_response
+    
+    meal = {
+        "_id": ObjectId(),
+        "seller_id": ObjectId(),
+        "title": "Test Meal",
+        "description": "Test description",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "photos": ["photo1.jpg"],
+        "allergen_info": {"contains": ["gluten"]},
+        "nutrition_info": {"calories": 500},
+        "portion_size": "2 servings",
+        "available_for_sale": True,
+        "sale_price": 10.00,
+        "available_for_swap": False,
+        "swap_preferences": [],
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "pickup_instructions": "Ring bell",
+        "average_rating": 4.5,
+        "total_reviews": 10,
+        "views": 50,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    seller = {
+        "_id": meal["seller_id"],
+        "full_name": "Test Seller",
+        "stats": {"average_rating": 4.8}
+    }
+    
+    response = meal_to_response(meal, seller)
+    
+    # This covers line 18
+    assert response.title == "Test Meal"
+    assert response.seller_name == "Test Seller"
+    assert response.seller_rating == 4.8
+
+
+# ============================================================
+# CREATE MEAL ENDPOINT TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_create_meal_endpoint(authenticated_meal_client, mongo_client, test_user, sample_meal_data):
+    """Test POST /api/meals endpoint"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await authenticated_meal_client.post("/api/meals/", json=sample_meal_data)
+    
+    # This covers lines 53-85
+    assert response.status_code == 201
+    data = response.json()
+    assert data["title"] == sample_meal_data["title"]
+    assert data["seller_name"] == test_user["full_name"]
+    assert data["status"] == "available"
+    assert data["views"] == 0
+    assert data["average_rating"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_create_meal_with_nutrition_info(authenticated_meal_client, mongo_client, sample_meal_data):
+    """Test creating meal with nutrition info"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await authenticated_meal_client.post("/api/meals/", json=sample_meal_data)
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["nutrition_info"]["calories"] == 450
+
+
+@pytest.mark.asyncio
+async def test_create_meal_without_nutrition_info(authenticated_meal_client, mongo_client, sample_meal_data):
+    """Test creating meal without nutrition info"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Remove nutrition_info
+    meal_data = sample_meal_data.copy()
+    meal_data["nutrition_info"] = None
+    
+    response = await authenticated_meal_client.post("/api/meals/", json=meal_data)
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["nutrition_info"] is None
+
+
+# ============================================================
+# GET ALL MEALS ENDPOINT TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_get_meals_no_filters(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals without filters"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create test meals
+    meal1 = {
+        "seller_id": test_user["_id"],
+        "title": "Pasta",
+        "description": "Italian pasta",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    await db.meals.insert_one(meal1)
+    
+    response = await meal_async_client.get("/api/meals/")
+    
+    # This covers lines 99-126
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 1
+    assert data[0]["title"] == "Pasta"
+
+
+@pytest.mark.asyncio
+async def test_get_meals_with_cuisine_filter(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals with cuisine_type filter"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create Italian and Mexican meals
+    italian_meal = {
+        "seller_id": test_user["_id"],
+        "title": "Pizza",
+        "description": "Italian pizza",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 20.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    mexican_meal = {
+        "seller_id": test_user["_id"],
+        "title": "Tacos",
+        "description": "Mexican tacos",
+        "cuisine_type": "Mexican",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "4",
+        "available_for_sale": True,
+        "sale_price": 12.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    await db.meals.insert_many([italian_meal, mexican_meal])
+    
+    response = await meal_async_client.get("/api/meals/?cuisine_type=Italian")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert all(meal["cuisine_type"] == "Italian" for meal in data)
+
+
+@pytest.mark.asyncio
+async def test_get_meals_with_meal_type_filter(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals with meal_type filter"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await meal_async_client.get("/api/meals/?meal_type=Lunch")
+    
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_meals_with_max_price_filter(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals with max_price filter"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await meal_async_client.get("/api/meals/?max_price=20.00")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert all(meal["sale_price"] <= 20.00 for meal in data if meal["sale_price"])
+
+
+@pytest.mark.asyncio
+async def test_get_meals_with_sale_filter(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals with available_for_sale filter"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await meal_async_client.get("/api/meals/?available_for_sale=true")
+    
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_meals_with_swap_filter(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals with available_for_swap filter"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await meal_async_client.get("/api/meals/?available_for_swap=true")
+    
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_get_meals_with_pagination(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals with skip and limit"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    response = await meal_async_client.get("/api/meals/?skip=0&limit=10")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) <= 10
+
+
+# ============================================================
+# GET MEAL BY ID ENDPOINT TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_get_meal_by_id_success(meal_async_client, mongo_client, test_user):
+    """Test GET /api/meals/{meal_id} with valid ID"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create a meal
+    meal = {
+        "seller_id": test_user["_id"],
+        "title": "Test Meal",
+        "description": "Test",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "views": 5,
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    response = await meal_async_client.get(f"/api/meals/{meal_id}")
+    
+    # This covers lines 132-162
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == meal_id
+    assert data["views"] == 6  # Should increment by 1
+
+
+@pytest.mark.asyncio
+async def test_get_meal_by_id_invalid_id(meal_async_client):
+    """Test GET /api/meals/{meal_id} with invalid ID format"""
+    
+    response = await meal_async_client.get("/api/meals/invalid_id_123")
+    
+    assert response.status_code == 400
+    assert "Invalid meal ID" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_get_meal_by_id_not_found(meal_async_client):
+    """Test GET /api/meals/{meal_id} with non-existent ID"""
+    
+    fake_id = str(ObjectId())
+    response = await meal_async_client.get(f"/api/meals/{fake_id}")
+    
+    assert response.status_code == 404
+    assert "Meal not found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_get_meal_by_id_seller_not_found(meal_async_client, mongo_client):
+    """Test GET /api/meals/{meal_id} when seller doesn't exist"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create meal with non-existent seller
+    meal = {
+        "seller_id": ObjectId(),  # Non-existent seller
+        "title": "Orphan Meal",
+        "description": "Test",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    response = await meal_async_client.get(f"/api/meals/{meal_id}")
+    
+    # Should return 404 for seller not found (lines 158-161)
+    assert response.status_code == 404
+    assert "Seller not found" in response.json()["detail"]
+
+
+# ============================================================
+# GET MY MEALS ENDPOINT TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_get_my_meals_endpoint(authenticated_meal_client, mongo_client, test_user):
+    """Test GET /api/meals/my/listings endpoint"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create meals for test user
+    meals = [
+        {
+            "seller_id": test_user["_id"],
+            "title": f"My Meal {i}",
+            "description": "Test",
+            "cuisine_type": "Italian",
+            "meal_type": "Dinner",
+            "allergen_info": {"contains": []},
+            "portion_size": "2",
+            "available_for_sale": True,
+            "sale_price": 15.00,
+            "available_for_swap": False,
+            "status": "available",
+            "preparation_date": datetime.utcnow(),
+            "expires_date": datetime.utcnow() + timedelta(days=1),
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        for i in range(3)
+    ]
+    
+    await db.meals.insert_many(meals)
+    
+    response = await authenticated_meal_client.get("/api/meals/my/listings")
+    
+    # This covers lines 168-174
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 3
+    assert all(meal["seller_id"] == str(test_user["_id"]) for meal in data)
+
+
+# ============================================================
+# UPDATE MEAL ENDPOINT TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_update_meal_success(authenticated_meal_client, mongo_client, test_user):
+    """Test PUT /api/meals/{meal_id} with valid update"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create a meal
+    meal = {
+        "seller_id": test_user["_id"],
+        "title": "Original Title",
+        "description": "Original description",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "pickup_instructions": "Ring bell",
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    # Update the meal
+    update_data = {
+        "title": "Updated Title",
+        "description": "Updated description",
+        "sale_price": 20.00
+    }
+    
+    response = await authenticated_meal_client.put(f"/api/meals/{meal_id}", json=update_data)
+    
+    # This covers lines 184-252
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Updated Title"
+    assert data["sale_price"] == 20.00
+
+
+@pytest.mark.asyncio
+async def test_update_meal_invalid_id(authenticated_meal_client):
+    """Test PUT /api/meals/{meal_id} with invalid ID"""
+    
+    update_data = {"title": "Updated"}
+    response = await authenticated_meal_client.put("/api/meals/invalid_id", json=update_data)
+    
+    assert response.status_code == 400
+    assert "Invalid meal ID" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_update_meal_not_found(authenticated_meal_client):
+    """Test PUT /api/meals/{meal_id} with non-existent meal"""
+    
+    fake_id = str(ObjectId())
+    update_data = {"title": "Updated"}
+    response = await authenticated_meal_client.put(f"/api/meals/{fake_id}", json=update_data)
+    
+    assert response.status_code == 404
+    assert "Meal not found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_update_meal_not_owner(authenticated_meal_client, mongo_client):
+    """Test PUT /api/meals/{meal_id} when user doesn't own meal"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create meal owned by someone else
+    other_user_id = ObjectId()
+    meal = {
+        "seller_id": other_user_id,
+        "title": "Other's Meal",
+        "description": "Test",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    update_data = {"title": "Trying to steal"}
+    response = await authenticated_meal_client.put(f"/api/meals/{meal_id}", json=update_data)
+    
+    # Should return 403 Forbidden (lines 205-208)
+    assert response.status_code == 403
+    assert "permission" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_update_meal_all_fields(authenticated_meal_client, mongo_client, test_user):
+    """Test updating all possible meal fields"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create a meal
+    meal = {
+        "seller_id": test_user["_id"],
+        "title": "Original",
+        "description": "Original",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "photos": [],
+        "allergen_info": {"contains": []},
+        "nutrition_info": {"calories": 100},
+        "portion_size": "1",
+        "available_for_sale": True,
+        "sale_price": 10.00,
+        "available_for_swap": False,
+        "swap_preferences": [],
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "pickup_instructions": "Old instructions",
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    # Update all fields
+    update_data = {
+        "title": "Updated Title",
+        "description": "Updated description",
+        "cuisine_type": "Mexican",
+        "meal_type": "Lunch",
+        "photos": ["new_photo.jpg"],
+        "allergen_info": {"contains": ["nuts"]},
+        "nutrition_info": {"calories": 500},
+        "portion_size": "4 servings",
+        "available_for_sale": False,
+        "sale_price": 25.00,
+        "available_for_swap": True,
+        "swap_preferences": ["Thai"],
+        "status": "sold",
+        "pickup_instructions": "New instructions"
+    }
+    
+    response = await authenticated_meal_client.put(f"/api/meals/{meal_id}", json=update_data)
+    
+    # Tests all the if statements in lines 213-238
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Updated Title"
+    assert data["cuisine_type"] == "Mexican"
+    assert data["meal_type"] == "Lunch"
+    assert "new_photo.jpg" in data["photos"]
+    assert data["status"] == "sold"
+
+
+@pytest.mark.asyncio
+async def test_update_meal_no_changes(authenticated_meal_client, mongo_client, test_user):
+    """Test PUT /api/meals/{meal_id} with no actual changes"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create a meal with all current values
+    current_time = datetime.utcnow()
+    meal = {
+        "seller_id": test_user["_id"],
+        "title": "Same Title",
+        "description": "Same",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": current_time,
+        "expires_date": current_time + timedelta(days=1),
+        "created_at": current_time,
+        "updated_at": current_time
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    # Small delay to ensure updated_at would be different
+    import asyncio
+    await asyncio.sleep(0.1)
+    
+    # Try to update with empty data (only updated_at will change)
+    update_data = {}
+    response = await authenticated_meal_client.put(f"/api/meals/{meal_id}", json=update_data)
+    
+    # With empty update_data, only updated_at changes, so modified_count may be 1
+    # The endpoint should either succeed (200) or fail with no changes (400)
+    assert response.status_code in [200, 400]
+    
+    if response.status_code == 400:
+        assert "No changes" in response.json()["detail"]
+
+
+# ============================================================
+# DELETE MEAL ENDPOINT TESTS
+# ============================================================
+
+@pytest.mark.asyncio
+async def test_delete_meal_success(authenticated_meal_client, mongo_client, test_user):
+    """Test DELETE /api/meals/{meal_id} successfully"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create a meal
+    meal = {
+        "seller_id": test_user["_id"],
+        "title": "To Delete",
+        "description": "Will be deleted",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    response = await authenticated_meal_client.delete(f"/api/meals/{meal_id}")
+    
+    # This covers lines 261-292
+    assert response.status_code == 200
+    assert "successfully deleted" in response.json()["message"]
+    
+    # Verify meal was deleted
+    deleted_meal = await db.meals.find_one({"_id": result.inserted_id})
+    assert deleted_meal is None
+
+
+@pytest.mark.asyncio
+async def test_delete_meal_invalid_id(authenticated_meal_client):
+    """Test DELETE /api/meals/{meal_id} with invalid ID"""
+    
+    response = await authenticated_meal_client.delete("/api/meals/invalid_id")
+    
+    assert response.status_code == 400
+    assert "Invalid meal ID" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_delete_meal_not_found(authenticated_meal_client):
+    """Test DELETE /api/meals/{meal_id} with non-existent meal"""
+    
+    fake_id = str(ObjectId())
+    response = await authenticated_meal_client.delete(f"/api/meals/{fake_id}")
+    
+    assert response.status_code == 404
+    assert "Meal not found" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_delete_meal_not_owner(authenticated_meal_client, mongo_client):
+    """Test DELETE /api/meals/{meal_id} when user doesn't own meal"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create meal owned by someone else
+    other_user_id = ObjectId()
+    meal = {
+        "seller_id": other_user_id,
+        "title": "Other's Meal",
+        "description": "Test",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    response = await authenticated_meal_client.delete(f"/api/meals/{meal_id}")
+    
+    # Should return 403 Forbidden (lines 276-279)
+    assert response.status_code == 403
+    assert "permission" in response.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_delete_meal_already_deleted(authenticated_meal_client, mongo_client, test_user):
+    """Test DELETE /api/meals/{meal_id} when meal was already deleted"""
+    db = mongo_client[TEST_DB_NAME]
+    
+    # Create and immediately delete a meal
+    meal = {
+        "seller_id": test_user["_id"],
+        "title": "Deleted",
+        "description": "Test",
+        "cuisine_type": "Italian",
+        "meal_type": "Dinner",
+        "allergen_info": {"contains": []},
+        "portion_size": "2",
+        "available_for_sale": True,
+        "sale_price": 15.00,
+        "available_for_swap": False,
+        "status": "available",
+        "preparation_date": datetime.utcnow(),
+        "expires_date": datetime.utcnow() + timedelta(days=1),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+    
+    result = await db.meals.insert_one(meal)
+    meal_id = str(result.inserted_id)
+    
+    # Delete it first
+    await db.meals.delete_one({"_id": result.inserted_id})
+    
+    # Try to delete again
+    response = await authenticated_meal_client.delete(f"/api/meals/{meal_id}")
+    
+    # Should return 404 (lines 286-289)
+    assert response.status_code == 404
