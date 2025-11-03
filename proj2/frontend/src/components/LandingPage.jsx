@@ -431,19 +431,19 @@ function LandingPage({ onAuthSuccess }) {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 md:gap-12 lg:gap-16">
             <div className="group text-center space-y-6 sm:space-y-8 p-6 sm:p-8 md:p-10 rounded-3xl bg-white/80 backdrop-blur-sm border border-primary/10 hover:bg-white/95 hover:border-primary/20 transition-all duration-500">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--dusty-rose)', opacity: '0.15' }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--dusty-rose)', opacity: '0.75' }}>
                   <span className="text-3xl sm:text-4xl">🏘️</span>
                 </div>
               </div>
               <div className="space-y-3 sm:space-y-4">
                 <h3 className="text-xl sm:text-2xl font-serif font-semibold text-primary">Browse Local Meals</h3>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-sans">Discover delicious homemade meals available in your neighborhood based on your preferences</p>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed font-sans">Discover delicious homemade meals available in your area based on your preferences</p>
               </div>
             </div>
             
             <div className="group text-center space-y-6 sm:space-y-8 p-6 sm:p-8 md:p-10 rounded-3xl bg-white/80 backdrop-blur-sm border border-primary/10 hover:bg-white/95 hover:border-primary/20 transition-all duration-500">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--soft-taupe)', opacity: '0.2' }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--soft-taupe)', opacity: '0.75' }}>
                   <span className="text-3xl sm:text-4xl">🔄</span>
                 </div>
               </div>
@@ -455,7 +455,7 @@ function LandingPage({ onAuthSuccess }) {
             
             <div className="group text-center space-y-6 sm:space-y-8 p-6 sm:p-8 md:p-10 rounded-3xl bg-white/80 backdrop-blur-sm border border-primary/10 hover:bg-white/95 hover:border-primary/20 transition-all duration-500">
               <div className="relative">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--rich-rose)', opacity: '0.12' }}>
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center mx-auto transition-all duration-300" style={{ backgroundColor: 'var(--rich-rose)', opacity: '0.75' }}>
                   <span className="text-3xl sm:text-4xl">🏆</span>
                 </div>
               </div>
@@ -466,12 +466,68 @@ function LandingPage({ onAuthSuccess }) {
             </div>
           </div>
         </div>
+
+
+        {/* Success Stories Section */}
+        <div className="mt-20 mb-32 px-4 text-center max-w-7xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-semibold tracking-tight mb-8">
+            Success Stories
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-sans leading-relaxed">
+            Hear from our amazing community members who have shared and enjoyed homemade meals.
+          </p>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 md:gap-12">
+          {/* Story Card 1 */}
+          <div className="bg-white/80 backdrop-blur-sm border border-primary/10 rounded-3xl p-6 sm:p-8 hover:bg-white/95 transition-all duration-500">
+          <div className="flex items-center space-x-4 mb-4">
+            <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="User" className="w-12 h-12 rounded-full object-cover"/>
+            <div className="text-left">
+              <h3 className="font-serif font-semibold text-primary text-lg">Angie R.</h3>
+              <span className="text-xs sm:text-sm text-muted-foreground">Home Cook</span>
+            </div>
+          </div>
+            <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+              "Taste Buddiez helped me sell my homemade meals to neighbors easily! I love being part of this community."
+            </p>
+          </div>
+
+          {/* Story Card 2 */}
+          <div className="bg-white/80 backdrop-blur-sm border border-primary/10 rounded-3xl p-6 sm:p-8 hover:bg-white/95 transition-all duration-500">
+          <div className="flex items-center space-x-4 mb-4">
+            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" className="w-12 h-12 rounded-full object-cover"/>
+            <div className="text-left">
+              <h3 className="font-serif font-semibold text-primary text-lg">Michael S.</h3>
+              <span className="text-xs sm:text-sm text-muted-foreground">Meal Enthusiast</span>
+            </div>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+            "I discovered so many amazing meals nearby! The platform is user-friendly and trustworthy."
+          </p>
+          </div>
+
+          {/* Story Card 3 */}
+          <div className="bg-white/80 backdrop-blur-sm border border-primary/10 rounded-3xl p-6 sm:p-8 hover:bg-white/95 transition-all duration-500">
+          <div className="flex items-center space-x-4 mb-4">
+            <img src="https://randomuser.me/api/portraits/women/45.jpg" alt="User" className="w-12 h-12 rounded-full object-cover"/>
+            <div className="text-left">
+              <h3 className="font-serif font-semibold text-primary text-lg">Sophia L.</h3>
+              <span className="text-xs sm:text-sm text-muted-foreground">Home Chef</span>
+            </div>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+            "Selling my baked goods has never been easier! I’ve met wonderful neighbors and gained loyal customers."
+          </p>
+          </div>
+          </div>
+        </div>
+
         
         {/* Social Proof */}
         <div className="relative py-12 sm:py-16 md:py-20 border-t border-primary/10 overflow-hidden">
-          <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 opacity-20">
             <img 
-              src="https://images.unsplash.com/photo-1752760023161-c2b5d8edd1a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjBraXRjaGVuJTIwY29va2luZ3xlbnwxfHx8fDE3NTk5MzkyMjB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+              src="https://www.dole.com/sites/default/files/media/featured-article-home-cooking-1338x460.jpeg"
               alt="Community cooking"
               className="w-full h-full object-cover"
             />
@@ -493,6 +549,59 @@ function LandingPage({ onAuthSuccess }) {
             </div>
           </div>
         </div>
+
+
+        {/* Partners & Collaborators Section */}
+        <div className="mt-20 mb-32 px-4 text-center max-w-7xl mx-auto">
+          <h2 className="text-primary text-3xl sm:text-4xl md:text-5xl font-serif font-semibold tracking-tight mb-8">
+            Our Partners & Collaborators
+          </h2>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-sans leading-relaxed">
+            We collaborate with trusted organizations to bring you the best homemade meals.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Madison Book</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Alice Guth</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Cynthia Espinoza-Arredondo</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Griffin Pitts</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Local Community Centers</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Local Neighborhoods</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Community Kitchens</p>
+            </div>
+            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
+              <p className="text-sm sm:text-base font-sans text-muted-foreground">Neighborhood Associations</p>
+            </div>
+        </div>
+        </div>
+
+
+        {/* Footer / Copyright Section */}
+        <footer className="bg-primary/10 backdrop-blur-sm border-t border-primary/20 py-6 mt-16">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left space-y-2 sm:space-y-0">
+          <span className="text-sm sm:text-base text-muted-foreground">
+            &copy; {new Date().getFullYear()} Taste Buddiez. Developed by Madison Book, Alice Guth, Cynthia Espinoza-Arredondo, & Griffin Pitts. All rights reserved.
+          </span>
+          <p className="text-xs sm:text-sm text-muted-foreground font-sans">
+            Licensed under the MIT License. 
+          </p>
+        </div>
+        </footer>
+
+
       </div>
     </div>
   );
