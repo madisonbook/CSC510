@@ -620,37 +620,38 @@ async def test_json_response_content_type(async_client):
 # ADDITIONAL LIFESPAN AND STARTUP TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_startup_event_creates_all_indexes(mongo_client):
     """Test that startup event creates all required indexes"""
     from app.main import startup_event
     import app.database as database_module
-    
+
     # Override database
     original_database = database_module.database
     database_module.database = mongo_client[TEST_DB_NAME]
-    
+
     # Run startup event
     await startup_event()
-    
+
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Check users indexes
     user_indexes = await db.users.index_information()
-    assert any('email' in str(idx) for idx in user_indexes.values())
-    
+    assert any("email" in str(idx) for idx in user_indexes.values())
+
     # Check meal indexes
     meal_indexes = await db.meals.index_information()
     meal_fields = set()
     for idx_info in meal_indexes.values():
-        for field_tuple in idx_info.get('key', []):
+        for field_tuple in idx_info.get("key", []):
             meal_fields.add(field_tuple[0])
-    
-    assert 'seller_id' in meal_fields
-    assert 'status' in meal_fields
-    assert 'cuisine_type' in meal_fields
-    assert 'created_at' in meal_fields
-    
+
+    assert "seller_id" in meal_fields
+    assert "status" in meal_fields
+    assert "cuisine_type" in meal_fields
+    assert "created_at" in meal_fields
+
     # Restore database
     database_module.database = original_database
 
@@ -659,7 +660,7 @@ async def test_startup_event_creates_all_indexes(mongo_client):
 async def test_shutdown_event_closes_connection(mongo_client):
     """Test that shutdown event properly closes database connection"""
     from app.main import shutdown_event
-    
+
     # This should not raise an error
     await shutdown_event()
 
@@ -668,12 +669,12 @@ async def test_shutdown_event_closes_connection(mongo_client):
 async def test_database_connection_persists_across_requests(async_client, mongo_client):
     """Test that database connection persists across multiple requests"""
     db = mongo_client[TEST_DB_NAME]
-    
+
     # Make multiple requests
     for _ in range(5):
         response = await async_client.get("/health")
         assert response.status_code == 200
-    
+
     # Database should still be accessible
     result = await db.command("ping")
     assert result["ok"] == 1.0
@@ -683,12 +684,15 @@ async def test_database_connection_persists_across_requests(async_client, mongo_
 # ROUTER INCLUSION AND ENDPOINT TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_auth_router_endpoints_accessible(async_client):
     """Test that auth router endpoints are accessible"""
     # Test that auth endpoints exist (will return error without proper data, but should not 404)
-    response = await async_client.post("/api/auth/login", json={"email": "test", "password": "test"})
-    
+    response = await async_client.post(
+        "/api/auth/login", json={"email": "test", "password": "test"}
+    )
+
     # Should not be 404 (endpoint exists)
     assert response.status_code != 404
 
@@ -697,17 +701,15 @@ async def test_auth_router_endpoints_accessible(async_client):
 # MIDDLEWARE TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_cors_allows_credentials(async_client):
     """Test that CORS is configured to allow credentials"""
     response = await async_client.get(
         "/health",
-        headers={
-            "Origin": "http://localhost:3000",
-            "Cookie": "session=test123"
-        }
+        headers={"Origin": "http://localhost:3000", "Cookie": "session=test123"},
     )
-    
+
     assert response.status_code == 200
 
 
@@ -715,16 +717,16 @@ async def test_cors_allows_credentials(async_client):
 async def test_cors_allows_all_methods(async_client):
     """Test that CORS allows all HTTP methods"""
     methods = ["GET", "POST", "PUT", "DELETE", "PATCH"]
-    
+
     for method in methods:
         response = await async_client.options(
             "/health",
             headers={
                 "Origin": "http://localhost:3000",
-                "Access-Control-Request-Method": method
-            }
+                "Access-Control-Request-Method": method,
+            },
         )
-        
+
         # OPTIONS should work (200) or allow the method
         assert response.status_code in [200, 204]
 
@@ -737,10 +739,10 @@ async def test_cors_allows_all_headers(async_client):
         headers={
             "Origin": "http://localhost:3000",
             "X-Custom-Header": "test-value",
-            "Authorization": "Bearer token123"
-        }
+            "Authorization": "Bearer token123",
+        },
     )
-    
+
     assert response.status_code == 200
 
 
@@ -748,15 +750,16 @@ async def test_cors_allows_all_headers(async_client):
 # ERROR HANDLING AND EDGE CASES
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_invalid_json_payload(async_client):
     """Test handling of invalid JSON in request body"""
     response = await async_client.post(
         "/api/auth/login",
         content="invalid json{{{",
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"},
     )
-    
+
     # Should return 422 (Unprocessable Entity) for invalid JSON
     assert response.status_code in [400, 422]
 
@@ -765,10 +768,9 @@ async def test_invalid_json_payload(async_client):
 async def test_missing_content_type_header(async_client):
     """Test handling of missing Content-Type header"""
     response = await async_client.post(
-        "/health",  # Use health endpoint instead of auth
-        content='{"test": "data"}'
+        "/health", content='{"test": "data"}'  # Use health endpoint instead of auth
     )
-    
+
     # Should return 405 (Method Not Allowed) since health only accepts GET
     assert response.status_code == 405
 
@@ -780,14 +782,11 @@ async def test_large_request_body_handling(async_client):
     large_data = {
         "email": "test@example.com",
         "password": "password123",
-        "bio": "x" * 10000  # 10KB of text
+        "bio": "x" * 10000,  # 10KB of text
     }
-    
-    response = await async_client.post(
-        "/api/auth/register/user",
-        json=large_data
-    )
-    
+
+    response = await async_client.post("/api/auth/register/user", json=large_data)
+
     # Should handle large payloads (may fail validation, but not crash)
     assert response.status_code in [200, 201, 400, 422]
 
@@ -796,7 +795,7 @@ async def test_large_request_body_handling(async_client):
 async def test_special_characters_in_path(async_client):
     """Test handling of special characters in URL path"""
     response = await async_client.get("/api/users/%20%20%20")
-    
+
     # Should return 400, 404, or 422, not crash
     assert response.status_code in [400, 404, 422]
 
@@ -805,14 +804,15 @@ async def test_special_characters_in_path(async_client):
 # ROOT ENDPOINT EXTENDED TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_root_endpoint_json_structure(async_client):
     """Test that root endpoint returns proper JSON structure"""
     response = await async_client.get("/")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Check structure
     assert isinstance(data, dict)
     assert len(data) == 2
@@ -824,13 +824,13 @@ async def test_root_endpoint_json_structure(async_client):
 async def test_root_endpoint_message_content(async_client):
     """Test that root endpoint message has expected content"""
     response = await async_client.get("/")
-    
+
     data = response.json()
-    
+
     # Check message content
     assert "Taste Buddiez" in data["message"]
     assert "API" in data["message"]
-    
+
     # Check tagline content
     assert "neighbors" in data["tagline"].lower()
     assert "meals" in data["tagline"].lower()
@@ -840,10 +840,10 @@ async def test_root_endpoint_message_content(async_client):
 async def test_health_check_json_structure(async_client):
     """Test that health check returns proper JSON structure"""
     response = await async_client.get("/health")
-    
+
     assert response.status_code == 200
     data = response.json()
-    
+
     # Check structure
     assert isinstance(data, dict)
     assert len(data) == 1
@@ -855,18 +855,19 @@ async def test_health_check_json_structure(async_client):
 # DATABASE ERROR HANDLING TESTS
 # ============================================================
 
+
 @pytest.mark.asyncio
 async def test_startup_handles_database_errors_gracefully():
     """Test that startup handles database connection errors gracefully"""
     from app.main import startup_event
     import app.database as database_module
-    
+
     # Store original
     original_database = database_module.database
-    
+
     # Set database to None to simulate error
     database_module.database = None
-    
+
     # Should not crash
     try:
         await startup_event()
