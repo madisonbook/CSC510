@@ -96,6 +96,7 @@ class UserCreate(BaseModel):
     location: Location
     bio: Optional[str] = None
     profile_picture: Optional[str] = None
+    dietary_preferences: Optional[DietaryPreferences] = None
 
     @validator("password")
     def validate_password(cls, v):
@@ -190,6 +191,17 @@ class PyObjectId(ObjectId):
 # ============================================================
 
 
+class Ingredient(BaseModel):
+    """Individual ingredient in a meal"""
+
+    name: str = Field(..., min_length=1, max_length=100)
+    quantity: Optional[str] = None  # e.g., "2 cups", "500g", "1 tbsp"
+    category: Optional[str] = (
+        None  # e.g., "protein", "vegetable", "grain", "dairy", "spice"
+    )
+    is_allergen: bool = False  # Flag for common allergens
+
+
 class AllergenInfo(BaseModel):
     """Allergen information for meals"""
 
@@ -204,6 +216,8 @@ class NutritionInfo(BaseModel):
     protein_grams: Optional[float] = None
     carbs_grams: Optional[float] = None
     fat_grams: Optional[float] = None
+    fiber_grams: Optional[float] = None
+    sodium_mg: Optional[float] = None
 
 
 class MealCreate(BaseModel):
@@ -213,6 +227,7 @@ class MealCreate(BaseModel):
     description: str = Field(..., min_length=10, max_length=1000)
     cuisine_type: str  # e.g., "Italian", "Mexican", "Asian"
     meal_type: str  # e.g., "breakfast", "lunch", "dinner", "snack", "dessert"
+    ingredients: List[Ingredient] = []  # List of ingredients
     photos: List[str] = []  # URLs to uploaded photos
     allergen_info: AllergenInfo
     nutrition_info: Optional[NutritionInfo] = None
@@ -231,6 +246,12 @@ class MealCreate(BaseModel):
             raise ValueError("Sale price must be greater than 0 if available for sale")
         return v
 
+    @validator("ingredients")
+    def validate_ingredients(cls, v):
+        if not v or len(v) == 0:
+            raise ValueError("At least one ingredient must be provided")
+        return v
+
 
 class MealUpdate(BaseModel):
     """Update an existing meal listing"""
@@ -239,6 +260,7 @@ class MealUpdate(BaseModel):
     description: Optional[str] = Field(None, min_length=10, max_length=1000)
     cuisine_type: Optional[str] = None
     meal_type: Optional[str] = None
+    ingredients: Optional[List[Ingredient]] = None
     photos: Optional[List[str]] = None
     allergen_info: Optional[AllergenInfo] = None
     nutrition_info: Optional[NutritionInfo] = None
@@ -262,6 +284,7 @@ class MealResponse(BaseModel):
     description: str
     cuisine_type: str
     meal_type: str
+    ingredients: List[Ingredient]
     photos: List[str]
     allergen_info: AllergenInfo
     nutrition_info: Optional[NutritionInfo]
@@ -355,6 +378,8 @@ class MealSearchFilters(BaseModel):
     available_for_sale: Optional[bool] = None
     available_for_swap: Optional[bool] = None
     exclude_allergens: List[str] = []
+    exclude_ingredients: List[str] = []  # Exclude specific ingredients
+    dietary_restrictions: List[str] = []  # Filter by dietary restrictions
     max_distance_miles: Optional[int] = 10
     latitude: Optional[float] = None
     longitude: Optional[float] = None
