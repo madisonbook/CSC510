@@ -9,6 +9,52 @@ services:
     command: black .
     volumes:
       - .:/app
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: myapp
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fastapi-backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - DATABASE_NAME=myapp
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend/app:/app/app
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    networks:
+      - app-network
 
   # Test MongoDB - separate from production
   test-mongo:
@@ -135,6 +181,14 @@ services:
     profiles:
       - test
 
+volumes:
+  mongodb_data:
+
 networks:
   test-network:
     driver: bridge
+  app-network:
+    driver: bridge
+
+
+  
