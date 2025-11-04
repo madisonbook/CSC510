@@ -5,8 +5,9 @@ from .database import get_database
 security = HTTPBearer()
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials =
-                           Depends(security)) -> dict:
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> dict:
     """
     Dependency to get the current authenticated user from token.
     For now, this is a simple implementation. You'll want to add JWT later.
@@ -15,8 +16,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials =
 
     if not credentials:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
         )
 
     # Simple token validation (replace with JWT in production)
@@ -28,13 +28,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials =
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials"
+                detail="Invalid authentication credentials",
             )
 
         if not user.get("verified"):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Email not verified"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified"
             )
 
         return user
@@ -43,5 +42,5 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials =
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
+            detail="Invalid authentication credentials",
         )

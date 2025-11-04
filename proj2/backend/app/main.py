@@ -16,11 +16,12 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await close_mongo_connection()
 
+
 app = FastAPI(
     title="Taste Buddies API",
     description="A full-stack application with FastAPI, MongoDB, and React",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 
@@ -43,8 +44,9 @@ async def startup_event():
             await db.meals.create_index([("created_at", ASCENDING)])
 
             # Verification token indexes
-            await db.verification_tokens.create_index([
-                ("expires_at", ASCENDING)], expireAfterSeconds=0)
+            await db.verification_tokens.create_index(
+                [("expires_at", ASCENDING)], expireAfterSeconds=0
+            )
             await db.verification_tokens.create_index([("email", ASCENDING)])
 
             # Review indexes
@@ -55,6 +57,7 @@ async def startup_event():
             print("✅ Database indexes verified/created")
         except Exception as e:
             print(f"⚠️ Index creation note: {e}")
+
 
 # CORS configuration
 app.add_middleware(
@@ -71,6 +74,7 @@ async def shutdown_event():
     """Close MongoDB connection on shutdown"""
     await close_mongo_connection()
 
+
 # Include routersv
 app.include_router(auth_router, tags=["Authentication"])
 app.include_router(user_router)
@@ -79,8 +83,10 @@ app.include_router(meal_router)
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Taste Buddiez API",
-            "tagline": "Connecting neighbors through homemade meals"}
+    return {
+        "message": "Welcome to Taste Buddiez API",
+        "tagline": "Connecting neighbors through homemade meals",
+    }
 
 
 @app.get("/health")

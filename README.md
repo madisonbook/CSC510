@@ -4,6 +4,8 @@
 
 [![Run Tests](https://github.com/madisonbook/CSC510/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/madisonbook/CSC510/actions/workflows/backend-tests.yml)
 
+![Code Format](https://github.com/madisonbook/CSC510/actions/workflows/format.yml/badge.svg)
+
 # TASTE BUDDIEZ (Group 26)
 
 ## Our Story
