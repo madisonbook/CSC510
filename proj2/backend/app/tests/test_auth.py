@@ -1,14 +1,13 @@
 """
 Comprehensive tests for auth_routes.py
-Tests user registration, email verification, login, and authentication flows
+Tests user registration, login, and authentication flows
 """
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from datetime import datetime, timedelta
+from datetime import datetime
 from bson import ObjectId
-from unittest.mock import patch, MagicMock
 
 TEST_DB_NAME = "test_meal_db"
 
@@ -48,10 +47,8 @@ async def async_client(test_db):
 async def clean_db(test_db):
     """Clean database before each test"""
     await test_db.users.delete_many({})
-    await test_db.verification_tokens.delete_many({})
     yield test_db
     await test_db.users.delete_many({})
-    await test_db.verification_tokens.delete_many({})
 
 
 @pytest.fixture
@@ -75,8 +72,8 @@ def sample_user_data():
 
 
 @pytest_asyncio.fixture
-async def verified_user(clean_db, sample_user_data):
-    """Create a verified user for testing login"""
+async def registered_user(clean_db, sample_user_data):
+    """Create a registered user for testing login"""
     from app.utils import hash_password
     from app.models import (
         UserRole,
@@ -111,43 +108,6 @@ async def verified_user(clean_db, sample_user_data):
     return user_doc
 
 
-@pytest_asyncio.fixture
-async def unverified_user(clean_db, sample_user_data):
-    """Create an unverified user for testing verification"""
-    from app.utils import hash_password
-    from app.models import (
-        UserRole,
-        AccountStatus,
-        UserStats,
-        SocialMediaLinks,
-        DietaryPreferences,
-    )
-
-    hashed_password = hash_password(sample_user_data["password"])
-
-    user_doc = {
-        "email": "unverified@example.com",
-        "password": hashed_password,
-        "full_name": "Unverified User",
-        "phone": "+1234567890",
-        "location": sample_user_data["location"],
-        "bio": "Test bio",
-        "profile_picture": None,
-        "dietary_preferences": DietaryPreferences().dict(),
-        "social_media": SocialMediaLinks().dict(),
-        "role": UserRole.USER,
-        "status": AccountStatus.PENDING,
-        "stats": UserStats().dict(),
-        "verified": False,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-    }
-
-    result = await clean_db.users.insert_one(user_doc)
-    user_doc["_id"] = result.inserted_id
-    return user_doc
-
-
 # ============================================================
 # USER REGISTRATION TESTS
 # ============================================================
@@ -156,38 +116,25 @@ async def unverified_user(clean_db, sample_user_data):
 @pytest.mark.asyncio
 async def test_register_user_success(async_client, clean_db, sample_user_data):
     """Test successful user registration"""
-    with patch("app.routes.auth_routes.send_verification_email") as mock_email:
-        response = await async_client.post(
-            "/api/auth/register/user", json=sample_user_data
-        )
+    response = await async_client.post("/api/auth/register/user", json=sample_user_data)
 
     assert response.status_code == 201
     data = response.json()
     assert "message" in data
     assert "user_id" in data
     assert data["email"] == sample_user_data["email"]
-    assert "verify your account" in data["message"].lower()
+    assert "can now log in" in data["message"].lower()
 
     # Verify user was created in database
     user = await clean_db.users.find_one({"email": sample_user_data["email"]})
     assert user is not None
-    assert user["verified"] is False
-    assert user["status"].upper() == "PENDING"
-
-    # Verify token was created
-    token = await clean_db.verification_tokens.find_one(
-        {"email": sample_user_data["email"]}
-    )
-    assert token is not None
-    assert token["token_type"] == "email_verification"
-
-    # Verify email was sent
-    mock_email.assert_called_once()
+    assert user["verified"] is True
+    assert user["status"].upper() == "ACTIVE"
 
 
 @pytest.mark.asyncio
 async def test_register_user_duplicate_email(
-    async_client, verified_user, sample_user_data
+    async_client, registered_user, sample_user_data
 ):
     """Test registration with existing email fails"""
     response = await async_client.post("/api/auth/register/user", json=sample_user_data)
@@ -202,10 +149,7 @@ async def test_register_user_password_is_hashed(
     async_client, clean_db, sample_user_data
 ):
     """Test that password is hashed before storage"""
-    with patch("app.routes.auth_routes.send_verification_email"):
-        response = await async_client.post(
-            "/api/auth/register/user", json=sample_user_data
-        )
+    response = await async_client.post("/api/auth/register/user", json=sample_user_data)
 
     assert response.status_code == 201
 
@@ -215,292 +159,60 @@ async def test_register_user_password_is_hashed(
 
 
 @pytest.mark.asyncio
-async def test_register_user_creates_verification_token(
-    async_client, clean_db, sample_user_data
-):
-    """Test that registration creates a verification token"""
-    with patch("app.routes.auth_routes.send_verification_email"):
-        response = await async_client.post(
-            "/api/auth/register/user", json=sample_user_data
-        )
-
-    assert response.status_code == 201
-
-    token = await clean_db.verification_tokens.find_one(
-        {"email": sample_user_data["email"]}
-    )
-    assert token is not None
-    assert token["token_type"] == "email_verification"
-    assert token["expires_at"] > datetime.utcnow()
-    assert (token["expires_at"] - datetime.utcnow()) <= timedelta(hours=24)
-
-
-@pytest.mark.asyncio
 async def test_register_user_sets_default_values(
     async_client, clean_db, sample_user_data
 ):
     """Test that registration sets correct default values"""
-    with patch("app.routes.auth_routes.send_verification_email"):
-        response = await async_client.post(
-            "/api/auth/register/user", json=sample_user_data
-        )
+    response = await async_client.post("/api/auth/register/user", json=sample_user_data)
 
     assert response.status_code == 201
 
     user = await clean_db.users.find_one({"email": sample_user_data["email"]})
     assert user["role"].upper() == "USER"
-    assert user["status"].upper() == "PENDING"
-    assert user["verified"] is False
+    assert user["status"].upper() == "ACTIVE"
+    assert user["verified"] is True
     assert "dietary_preferences" in user
     assert "social_media" in user
     assert "stats" in user
 
 
-# ============================================================
-# EMAIL VERIFICATION TESTS (GET)
-# ============================================================
-
-
 @pytest.mark.asyncio
-async def test_verify_user_success(async_client, clean_db, unverified_user):
-    """Test successful email verification via GET endpoint"""
-    # Create verification token
-    token = "test_token_123"
-    token_doc = {
-        "email": unverified_user["email"],
-        "token": token,
-        "token_type": "email_verification",
-        "expires_at": datetime.utcnow() + timedelta(hours=24),
-        "created_at": datetime.utcnow(),
-    }
-    await clean_db.verification_tokens.insert_one(token_doc)
-
-    response = await async_client.get(
-        f"/api/auth/verify?email={unverified_user['email']}&token={token}"
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "verified successfully" in data["message"].lower()
-
-    # Verify user is now verified
-    user = await clean_db.users.find_one({"email": unverified_user["email"]})
-    assert user["verified"] is True
-    assert user["status"].upper() == "ACTIVE"
-
-    # Verify token was deleted
-    token_check = await clean_db.verification_tokens.find_one({"token": token})
-    assert token_check is None
-
-
-@pytest.mark.asyncio
-async def test_verify_user_invalid_token(async_client, clean_db, unverified_user):
-    """Test verification with invalid token fails"""
-    response = await async_client.get(
-        f"/api/auth/verify?email={unverified_user['email']}&token=invalid_token"
-    )
-
-    assert response.status_code == 400
-    data = response.json()
-    assert "invalid" in data["detail"].lower() or "expired" in data["detail"].lower()
-
-
-@pytest.mark.asyncio
-async def test_verify_user_expired_token(async_client, clean_db, unverified_user):
-    """Test verification with expired token fails"""
-    token = "expired_token"
-    token_doc = {
-        "email": unverified_user["email"],
-        "token": token,
-        "token_type": "email_verification",
-        "expires_at": datetime.utcnow() - timedelta(hours=1),  # Expired
-        "created_at": datetime.utcnow() - timedelta(hours=25),
-    }
-    await clean_db.verification_tokens.insert_one(token_doc)
-
-    response = await async_client.get(
-        f"/api/auth/verify?email={unverified_user['email']}&token={token}"
-    )
-
-    assert response.status_code == 400
-    data = response.json()
-    assert "expired" in data["detail"].lower()
-
-
-# ============================================================
-# EMAIL VERIFICATION TESTS (POST)
-# ============================================================
-
-
-@pytest.mark.asyncio
-async def test_verify_email_post_success(async_client, clean_db, unverified_user):
-    """Test successful email verification via POST endpoint"""
-    token = "test_post_token"
-    token_doc = {
-        "email": unverified_user["email"],
-        "token": token,
-        "token_type": "email_verification",
-        "expires_at": datetime.utcnow() + timedelta(hours=24),
-        "created_at": datetime.utcnow(),
-    }
-    await clean_db.verification_tokens.insert_one(token_doc)
-
-    response = await async_client.post(
-        f"/api/auth/verify?email={unverified_user['email']}&token={token}&account_type=user"
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["verified"] is True
-    assert "verified successfully" in data["message"].lower()
-
-    # Verify user status
-    user = await clean_db.users.find_one({"email": unverified_user["email"]})
-    assert user["verified"] is True
-    assert user["status"].upper() == "ACTIVE"
-
-
-@pytest.mark.asyncio
-async def test_verify_email_post_invalid_token(async_client, unverified_user):
-    """Test POST verification with invalid token"""
-    response = await async_client.post(
-        f"/api/auth/verify?email={unverified_user['email']}&token=bad_token"
-    )
-
-    assert response.status_code == 400
-    data = response.json()
-    assert "invalid" in data["detail"].lower() or "expired" in data["detail"].lower()
-
-
-@pytest.mark.asyncio
-async def test_verify_email_post_nonexistent_account(async_client, clean_db):
-    """Test POST verification for nonexistent account"""
-    token = "test_token"
-    token_doc = {
-        "email": "nonexistent@example.com",
-        "token": token,
-        "token_type": "email_verification",
-        "expires_at": datetime.utcnow() + timedelta(hours=24),
-        "created_at": datetime.utcnow(),
-    }
-    await clean_db.verification_tokens.insert_one(token_doc)
-
-    response = await async_client.post(
-        f"/api/auth/verify?email=nonexistent@example.com&token={token}"
-    )
-
-    assert response.status_code == 404
-    data = response.json()
-    assert "not found" in data["detail"].lower()
-
-
-@pytest.mark.asyncio
-async def test_verify_email_deletes_token_after_use(
-    async_client, clean_db, unverified_user
+async def test_register_user_immediate_active_status(
+    async_client, clean_db, sample_user_data
 ):
-    """Test that verification token is deleted after successful verification"""
-    token = "single_use_token"
-    token_doc = {
-        "email": unverified_user["email"],
-        "token": token,
-        "token_type": "email_verification",
-        "expires_at": datetime.utcnow() + timedelta(hours=24),
-        "created_at": datetime.utcnow(),
-    }
-    await clean_db.verification_tokens.insert_one(token_doc)
+    """Test that newly registered users are immediately active"""
+    response = await async_client.post("/api/auth/register/user", json=sample_user_data)
 
-    response = await async_client.post(
-        f"/api/auth/verify?email={unverified_user['email']}&token={token}"
-    )
+    assert response.status_code == 201
 
-    assert response.status_code == 200
-
-    # Try to verify again with same token
-    response2 = await async_client.post(
-        f"/api/auth/verify?email={unverified_user['email']}&token={token}"
-    )
-
-    assert response2.status_code == 400
-
-
-# ============================================================
-# RESEND VERIFICATION EMAIL TESTS
-# ============================================================
+    user = await clean_db.users.find_one({"email": sample_user_data["email"]})
+    assert user["status"].upper() == "ACTIVE"
+    assert user["verified"] is True
 
 
 @pytest.mark.asyncio
-async def test_resend_verification_success(async_client, clean_db, unverified_user):
-    """Test successful resending of verification email"""
-    with patch("app.routes.auth_routes.send_verification_email") as mock_email:
-        response = await async_client.post(
-            f"/api/auth/resend-verification?email={unverified_user['email']}&account_type=user"
-        )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "sent successfully" in data["message"].lower()
-
-    # Verify new token was created
-    token = await clean_db.verification_tokens.find_one(
-        {"email": unverified_user["email"]}
-    )
-    assert token is not None
-
-    mock_email.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_resend_verification_nonexistent_account(async_client):
-    """Test resending verification for nonexistent account"""
-    response = await async_client.post(
-        "/api/auth/resend-verification?email=nonexistent@example.com"
-    )
-
-    assert response.status_code == 404
-    data = response.json()
-    assert "not found" in data["detail"].lower()
-
-
-@pytest.mark.asyncio
-async def test_resend_verification_already_verified(async_client, verified_user):
-    """Test resending verification for already verified account"""
-    response = await async_client.post(
-        f"/api/auth/resend-verification?email={verified_user['email']}"
-    )
-
-    assert response.status_code == 400
-    data = response.json()
-    assert "already verified" in data["detail"].lower()
-
-
-@pytest.mark.asyncio
-async def test_resend_verification_deletes_old_tokens(
-    async_client, clean_db, unverified_user
+async def test_register_user_can_login_immediately(
+    async_client, clean_db, sample_user_data
 ):
-    """Test that resending verification deletes old tokens"""
-    # Create multiple old tokens
-    for i in range(3):
-        token_doc = {
-            "email": unverified_user["email"],
-            "token": f"old_token_{i}",
-            "token_type": "email_verification",
-            "expires_at": datetime.utcnow() + timedelta(hours=24),
-            "created_at": datetime.utcnow(),
-        }
-        await clean_db.verification_tokens.insert_one(token_doc)
+    """Test that user can login immediately after registration"""
+    # Register
+    register_response = await async_client.post(
+        "/api/auth/register/user", json=sample_user_data
+    )
+    assert register_response.status_code == 201
 
-    with patch("app.routes.auth_routes.send_verification_email"):
-        response = await async_client.post(
-            f"/api/auth/resend-verification?email={unverified_user['email']}"
-        )
+    # Login immediately
+    login_response = await async_client.post(
+        "/api/auth/login",
+        json={
+            "email": sample_user_data["email"],
+            "password": sample_user_data["password"],
+        },
+    )
 
-    assert response.status_code == 200
-
-    # Check that only one token exists (the new one)
-    tokens = await clean_db.verification_tokens.find(
-        {"email": unverified_user["email"]}
-    ).to_list(100)
-    assert len(tokens) == 1
+    assert login_response.status_code == 200
+    data = login_response.json()
+    assert data["message"] == "Login successful"
 
 
 # ============================================================
@@ -509,7 +221,7 @@ async def test_resend_verification_deletes_old_tokens(
 
 
 @pytest.mark.asyncio
-async def test_login_success(async_client, verified_user, sample_user_data):
+async def test_login_success(async_client, registered_user, sample_user_data):
     """Test successful user login"""
     response = await async_client.post(
         "/api/auth/login",
@@ -529,11 +241,11 @@ async def test_login_success(async_client, verified_user, sample_user_data):
 
 
 @pytest.mark.asyncio
-async def test_login_incorrect_password(async_client, verified_user):
+async def test_login_incorrect_password(async_client, registered_user):
     """Test login with incorrect password fails"""
     response = await async_client.post(
         "/api/auth/login",
-        json={"email": verified_user["email"], "password": "WrongPassword123!"},
+        json={"email": registered_user["email"], "password": "WrongPassword123!"},
     )
 
     assert response.status_code == 401
@@ -549,41 +261,13 @@ async def test_login_nonexistent_user(async_client):
         json={"email": "nonexistent@example.com", "password": "SomePassword123!"},
     )
 
-    # The endpoint doesn't return proper error for nonexistent user
-    # It should return 401 or 404, but might return no response
-    # Just verify it's not a successful login (not 200)
-    assert response.status_code != 200
-
-
-@pytest.mark.asyncio
-async def test_login_unverified_user(
-    async_client, clean_db, unverified_user, sample_user_data
-):
-    """Test login with unverified account fails"""
-    # Update unverified user with known password
-    from app.utils import hash_password
-
-    hashed = hash_password(sample_user_data["password"])
-
-    await clean_db.users.update_one(
-        {"email": unverified_user["email"]}, {"$set": {"password": hashed}}
-    )
-
-    response = await async_client.post(
-        "/api/auth/login",
-        json={
-            "email": unverified_user["email"],
-            "password": sample_user_data["password"],
-        },
-    )
-
-    assert response.status_code == 403
+    assert response.status_code == 401
     data = response.json()
-    assert "verify your email" in data["detail"].lower()
+    assert "incorrect" in data["detail"].lower()
 
 
 @pytest.mark.asyncio
-async def test_login_returns_user_info(async_client, verified_user, sample_user_data):
+async def test_login_returns_user_info(async_client, registered_user, sample_user_data):
     """Test that login returns correct user information"""
     response = await async_client.post(
         "/api/auth/login",
@@ -599,8 +283,37 @@ async def test_login_returns_user_info(async_client, verified_user, sample_user_
     assert "email" in data
     assert "role" in data
     assert "full_name" in data
-    assert data["email"] == verified_user["email"]
-    assert data["full_name"] == verified_user["full_name"]
+    assert data["email"] == registered_user["email"]
+    assert data["full_name"] == registered_user["full_name"]
+
+
+@pytest.mark.asyncio
+async def test_login_case_sensitive_email(
+    async_client, registered_user, sample_user_data
+):
+    """Test that email is case-sensitive during login"""
+    response = await async_client.post(
+        "/api/auth/login",
+        json={
+            "email": sample_user_data["email"].upper(),
+            "password": sample_user_data["password"],
+        },
+    )
+
+    # Should fail because email is case-sensitive
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_login_empty_credentials(async_client):
+    """Test login with empty credentials"""
+    response = await async_client.post(
+        "/api/auth/login",
+        json={"email": "", "password": ""},
+    )
+
+    # Should return 422 for validation error or 401 for invalid credentials
+    assert response.status_code in [401, 422]
 
 
 # ============================================================
@@ -609,14 +322,14 @@ async def test_login_returns_user_info(async_client, verified_user, sample_user_
 
 
 @pytest.mark.asyncio
-async def test_debug_list_users(async_client, verified_user, unverified_user):
+async def test_debug_list_users(async_client, registered_user):
     """Test debug endpoint lists all users"""
     response = await async_client.get("/api/debug/users")
 
     assert response.status_code == 200
     users = response.json()
     assert isinstance(users, list)
-    assert len(users) >= 2
+    assert len(users) >= 1
 
     # Check that _id is converted to string
     for user in users:
@@ -637,10 +350,174 @@ async def test_debug_list_users_empty_db(async_client, clean_db):
 @pytest.mark.asyncio
 async def test_debug_list_users_limit(async_client, clean_db):
     """Test debug endpoint respects 100 user limit"""
-    # This test would require creating 101+ users
-    # For now, just verify it returns successfully
     response = await async_client.get("/api/debug/users")
 
     assert response.status_code == 200
     users = response.json()
     assert len(users) <= 100
+
+
+@pytest.mark.asyncio
+async def test_debug_list_users_includes_all_fields(async_client, registered_user):
+    """Test debug endpoint includes user fields"""
+    response = await async_client.get("/api/debug/users")
+
+    assert response.status_code == 200
+    users = response.json()
+
+    if len(users) > 0:
+        user = users[0]
+        assert "email" in user
+        assert "full_name" in user
+        assert "verified" in user
+        assert "status" in user
+
+
+# ============================================================
+# PASSWORD VALIDATION TESTS
+# ============================================================
+
+
+@pytest.mark.asyncio
+async def test_register_weak_password(async_client, sample_user_data):
+    """Test registration with weak password fails"""
+    weak_passwords = [
+        "short",  # Too short
+        "alllowercase123",  # No uppercase
+        "ALLUPPERCASE123",  # No lowercase
+        "NoNumbers!",  # No numbers
+    ]
+
+    for weak_pwd in weak_passwords:
+        data = sample_user_data.copy()
+        data["password"] = weak_pwd
+
+        response = await async_client.post("/api/auth/register/user", json=data)
+
+        assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_register_valid_password_formats(
+    async_client, clean_db, sample_user_data
+):
+    """Test various valid password formats"""
+    valid_passwords = [
+        "Password123!",
+        "Abcdefgh1",
+        "MyP@ssw0rd",
+        "Secure123Password",
+    ]
+
+    for i, valid_pwd in enumerate(valid_passwords):
+        data = sample_user_data.copy()
+        data["email"] = f"user{i}@example.com"
+        data["password"] = valid_pwd
+
+        response = await async_client.post("/api/auth/register/user", json=data)
+
+        assert response.status_code == 201
+
+
+# ============================================================
+# EDGE CASES AND ERROR HANDLING
+# ============================================================
+
+
+@pytest.mark.asyncio
+async def test_register_invalid_email_format(async_client, sample_user_data):
+    """Test registration with invalid email format"""
+    invalid_emails = [
+        "notanemail",
+        "@example.com",
+        "user@",
+        "user @example.com",
+    ]
+
+    for invalid_email in invalid_emails:
+        data = sample_user_data.copy()
+        data["email"] = invalid_email
+
+        response = await async_client.post("/api/auth/register/user", json=data)
+
+        assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_register_missing_required_fields(async_client):
+    """Test registration with missing required fields"""
+    incomplete_data = {
+        "email": "test@example.com",
+        "password": "Password123",
+        # Missing full_name, location
+    }
+
+    response = await async_client.post("/api/auth/register/user", json=incomplete_data)
+
+    assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_login_missing_fields(async_client):
+    """Test login with missing fields"""
+    response = await async_client.post(
+        "/api/auth/login",
+        json={"email": "test@example.com"},  # Missing password
+    )
+
+    assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_register_with_special_characters_in_name(
+    async_client, clean_db, sample_user_data
+):
+    """Test registration with special characters in name"""
+    data = sample_user_data.copy()
+    data["email"] = "special@example.com"
+    data["full_name"] = "José María O'Connor-Smith"
+
+    response = await async_client.post("/api/auth/register/user", json=data)
+
+    assert response.status_code == 201
+
+    user = await clean_db.users.find_one({"email": data["email"]})
+    assert user["full_name"] == "José María O'Connor-Smith"
+
+
+@pytest.mark.asyncio
+async def test_register_with_long_bio(async_client, clean_db, sample_user_data):
+    """Test registration with very long bio"""
+    data = sample_user_data.copy()
+    data["email"] = "longbio@example.com"
+    data["bio"] = "A" * 1000  # Very long bio
+
+    response = await async_client.post("/api/auth/register/user", json=data)
+
+    assert response.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_multiple_concurrent_registrations(
+    async_client, clean_db, sample_user_data
+):
+    """Test multiple users can register concurrently"""
+    import asyncio
+
+    async def register_user(email):
+        data = sample_user_data.copy()
+        data["email"] = email
+        return await async_client.post("/api/auth/register/user", json=data)
+
+    # Register 5 users concurrently
+    responses = await asyncio.gather(
+        *[register_user(f"user{i}@example.com") for i in range(5)]
+    )
+
+    # All should succeed
+    for response in responses:
+        assert response.status_code == 201
+
+    # Verify all users exist
+    users = await clean_db.users.find({}).to_list(None)
+    assert len(users) == 5
