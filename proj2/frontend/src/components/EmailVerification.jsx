@@ -23,23 +23,38 @@ export default function EmailVerification() {
           `${backendURL}/api/auth/verify?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`,
           {
             method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Accept': 'application/json, text/html' }
           }
         );
 
-        const data = await response.json();
+        // Attempt to parse JSON first; if the server returned HTML (clicked link
+        // in browser), fall back to reading text.
+        let data;
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          data = await response.text();
+        }
 
         if (response.ok) {
           setStatus('success');
-          setMessage(data.message || 'Your email has been verified successfully!');
-          
+          // If JSON, use message field; if HTML/text, show a friendly message
+          setMessage(typeof data === 'string' ? 'Your email has been verified successfully!' : (data.message || 'Your email has been verified successfully!'));
+
           // Redirect to home after 3 seconds
           setTimeout(() => {
             window.location.href = '/';
           }, 3000);
         } else {
           setStatus('error');
-          setMessage(data.detail || 'Verification failed. The link may be expired or invalid.');
+          if (typeof data === 'string') {
+            // Try to extract a short message from the HTML/text
+            const plain = data.replace(/<[^>]+>/g, ' ').trim();
+            setMessage(plain || 'Verification failed. The link may be expired or invalid.');
+          } else {
+            setMessage(data.detail || 'Verification failed. The link may be expired or invalid.');
+          }
         }
       } catch (error) {
         console.error('Verification error:', error);

@@ -247,13 +247,13 @@ export default function Dashboard({ onLogout }) {
                 <Profile user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />
                
                 <div className="hidden md:block">
-                  <p className="text-sm">{fullName}</p>
+                  <p className="text-sm">{user?.full_name ? user.full_name : (fullName || 'User')}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
-                  className="cursor-pointer h-8 w-8 sm:h-9 sm:w-9"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
                 >
                   <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>

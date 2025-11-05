@@ -1,19 +1,40 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import asyncio
+from datetime import datetime
 from .database import connect_to_mongo, close_mongo_connection, get_database
 from .routes.auth_routes import router as auth_router
 from .routes.user_routes import router as user_router
 from .routes.meal_routes import router as meal_router
 from pymongo import ASCENDING
+from . import seed_data
 
+async def wait_for_mongo(retries: int = 60, delay: float = 1.0):
+    db = get_database()
+    for _ in range(retries):
+        try:
+            await db.command("ping")
+            return
+        except Exception:
+            await asyncio.sleep(delay)
+    raise RuntimeError("MongoDB not ready after waiting")
+
+async def run_seed_once():
+    db = get_database()
+    if await db["_meta"].find_one({"key": "seed_done"}):
+        return
+    await seed_data.seed()
+    await db["_meta"].insert_one({"key": "seed_done", "at": datetime.utcnow()})
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await connect_to_mongo()
+    await wait_for_mongo()
+    await run_seed_once()
     yield
-    # Shutdown
     await close_mongo_connection()
 
 
@@ -24,6 +45,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Serve uploaded files (images) from the app/static/uploads folder
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.on_event("startup")
 async def startup_event():
@@ -62,8 +87,8 @@ async def startup_event():
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
