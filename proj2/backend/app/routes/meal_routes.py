@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from datetime import datetime
 from bson import ObjectId
 from typing import List, Optional
@@ -8,6 +8,117 @@ from app.database import get_database
 from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/meals", tags=["Meals"])
+
+
+# Helper function to get dietary restriction exclusion rules
+def get_dietary_exclusions(dietary_restriction: str):
+    """Get ingredients and allergens to exclude based on dietary restriction"""
+    rules = {
+        "vegetarian": {
+            "ingredients": [
+                "beef",
+                "pork",
+                "chicken",
+                "turkey",
+                "lamb",
+                "meat",
+                "fish",
+                "seafood",
+                "shrimp",
+                "salmon",
+                "tuna",
+            ],
+            "allergens": [],
+        },
+        "vegan": {
+            "ingredients": [
+                "beef",
+                "pork",
+                "chicken",
+                "turkey",
+                "lamb",
+                "meat",
+                "fish",
+                "seafood",
+                "shrimp",
+                "cheese",
+                "butter",
+                "cream",
+                "milk",
+                "yogurt",
+                "honey",
+                "egg",
+            ],
+            "allergens": ["dairy", "eggs", "milk"],
+        },
+        "pescatarian": {
+            "ingredients": ["beef", "pork", "chicken", "turkey", "lamb", "meat"],
+            "allergens": [],
+        },
+        "gluten-free": {
+            "ingredients": [
+                "wheat",
+                "flour",
+                "bread",
+                "pasta",
+                "barley",
+                "rye",
+                "noodles",
+            ],
+            "allergens": ["wheat", "gluten"],
+        },
+        "dairy-free": {
+            "ingredients": [
+                "cheese",
+                "butter",
+                "cream",
+                "milk",
+                "yogurt",
+                "whey",
+                "casein",
+            ],
+            "allergens": ["dairy", "milk"],
+        },
+        "nut-free": {
+            "ingredients": [
+                "peanut",
+                "almond",
+                "walnut",
+                "cashew",
+                "pecan",
+                "hazelnut",
+                "pistachio",
+            ],
+            "allergens": ["peanuts", "tree nuts", "nuts"],
+        },
+        "keto": {
+            "ingredients": [
+                "bread",
+                "pasta",
+                "rice",
+                "potato",
+                "sugar",
+                "flour",
+                "noodles",
+                "corn",
+            ],
+            "allergens": [],
+        },
+        "paleo": {
+            "ingredients": [
+                "bread",
+                "pasta",
+                "rice",
+                "bean",
+                "lentil",
+                "dairy",
+                "sugar",
+                "flour",
+            ],
+            "allergens": [],
+        },
+    }
+    return rules.get(dietary_restriction.lower(), {"ingredients": [], "allergens": []})
 
 
 # Helper function to serialize MongoDB meal
@@ -22,6 +133,7 @@ def meal_to_response(meal: dict, seller: dict) -> MealResponse:
         description=meal["description"],
         cuisine_type=meal["cuisine_type"],
         meal_type=meal["meal_type"],
+        ingredients=meal.get("ingredients", []),
         photos=meal.get("photos", []),
         allergen_info=meal["allergen_info"],
         nutrition_info=meal.get("nutrition_info"),
@@ -42,6 +154,29 @@ def meal_to_response(meal: dict, seller: dict) -> MealResponse:
     )
 
 
+def check_meal_matches_dietary_restriction(
+    meal: dict, dietary_restriction: str
+) -> bool:
+    """Check if a meal matches a dietary restriction"""
+    exclusions = get_dietary_exclusions(dietary_restriction)
+
+    # Check allergens
+    meal_allergens = meal.get("allergen_info", {}).get("contains", [])
+    for allergen in exclusions["allergens"]:
+        if any(allergen.lower() in ma.lower() for ma in meal_allergens):
+            return False
+
+    # Check ingredients
+    meal_ingredients = [
+        ing.get("name", "").lower() for ing in meal.get("ingredients", [])
+    ]
+    for excluded_ing in exclusions["ingredients"]:
+        if any(excluded_ing in ing for ing in meal_ingredients):
+            return False
+
+    return True
+
+
 # Create a new meal
 @router.post("/", response_model=MealResponse, status_code=status.HTTP_201_CREATED)
 async def create_meal(meal: MealCreate, current_user: dict = Depends(get_current_user)):
@@ -54,6 +189,7 @@ async def create_meal(meal: MealCreate, current_user: dict = Depends(get_current
         "description": meal.description,
         "cuisine_type": meal.cuisine_type,
         "meal_type": meal.meal_type,
+        "ingredients": [ing.model_dump() for ing in meal.ingredients],
         "photos": meal.photos,
         "allergen_info": meal.allergen_info.model_dump(),
         "nutrition_info": (
@@ -88,9 +224,20 @@ async def create_meal(meal: MealCreate, current_user: dict = Depends(get_current
 async def get_meals(
     cuisine_type: Optional[str] = None,
     meal_type: Optional[str] = None,
+    dietary_restriction: Optional[str] = Query(
+        None,
+        description="Filter by dietary restriction: vegetarian, vegan, pescatarian, gluten-free, dairy-free, nut-free, keto, paleo",
+    ),
     max_price: Optional[float] = None,
     available_for_sale: Optional[bool] = None,
     available_for_swap: Optional[bool] = None,
+    exclude_allergens: Optional[str] = Query(
+        None, description="Comma-separated list of allergens to exclude"
+    ),
+    exclude_ingredients: Optional[str] = Query(
+        None, description="Comma-separated list of ingredients to exclude"
+    ),
+    min_rating: Optional[float] = None,
     skip: int = 0,
     limit: int = 20,
 ):
@@ -110,14 +257,46 @@ async def get_meals(
         query["available_for_sale"] = available_for_sale
     if available_for_swap is not None:
         query["available_for_swap"] = available_for_swap
+    if min_rating is not None:
+        query["average_rating"] = {"$gte": min_rating}
+
+    # Filter by specific allergens
+    if exclude_allergens:
+        allergen_list = [a.strip() for a in exclude_allergens.split(",")]
+        # Exclude meals that contain any of these allergens
+        for allergen in allergen_list:
+            if "allergen_info.contains" not in query:
+                query["allergen_info.contains"] = {"$nin": []}
+            query["allergen_info.contains"]["$nin"].append(allergen)
+
+    # Filter by specific ingredients (case-insensitive)
+    if exclude_ingredients:
+        ingredient_list = [i.strip() for i in exclude_ingredients.split(",")]
+        # Create regex patterns for each ingredient
+        ingredient_patterns = [
+            {"ingredients.name": {"$not": {"$regex": ing, "$options": "i"}}}
+            for ing in ingredient_list
+        ]
+        if "$and" in query:
+            query["$and"].extend(ingredient_patterns)
+        else:
+            query["$and"] = ingredient_patterns
 
     # Fetch meals
     meals_cursor = db.meals.find(query).skip(skip).limit(limit).sort("created_at", -1)
-    meals = await meals_cursor.to_list(length=limit)
+    meals = await meals_cursor.to_list(length=None)
+
+    # Apply dietary restriction filter (post-query filtering for complex logic)
+    if dietary_restriction:
+        meals = [
+            meal
+            for meal in meals
+            if check_meal_matches_dietary_restriction(meal, dietary_restriction)
+        ]
 
     # Fetch sellers for each meal
     meal_responses = []
-    for meal in meals:
+    for meal in meals[:limit]:  # Re-apply limit after filtering
         seller = await db.users.find_one({"_id": meal["seller_id"]})
         if seller:
             meal_responses.append(meal_to_response(meal, seller))
@@ -171,6 +350,70 @@ async def get_my_meals(current_user: dict = Depends(get_current_user)):
     return meal_responses
 
 
+# Get meals matching user's dietary preferences
+@router.get("/my/recommendations", response_model=List[MealResponse])
+async def get_recommended_meals(
+    current_user: dict = Depends(get_current_user),
+    skip: int = 0,
+    limit: int = 20,
+):
+    """Get meals that match the user's dietary preferences"""
+    db = get_database()
+
+    dietary_prefs = current_user.get("dietary_preferences", {})
+
+    # Build query based on user preferences
+    query = {"status": MealStatus.AVAILABLE, "seller_id": {"$ne": current_user["_id"]}}
+
+    # Exclude user's allergens
+    allergens = dietary_prefs.get("allergens", [])
+    if allergens:
+        for allergen in allergens:
+            if "allergen_info.contains" not in query:
+                query["allergen_info.contains"] = {"$nin": []}
+            query["allergen_info.contains"]["$nin"].append(allergen)
+
+    # Exclude user's avoided ingredients
+    avoid_ingredients = dietary_prefs.get("avoid_ingredients", [])
+    if avoid_ingredients:
+        ingredient_patterns = [
+            {"ingredients.name": {"$not": {"$regex": ing, "$options": "i"}}}
+            for ing in avoid_ingredients
+        ]
+        query["$and"] = ingredient_patterns
+
+    # Fetch meals
+    meals_cursor = db.meals.find(query).skip(skip).limit(limit).sort("created_at", -1)
+    meals = await meals_cursor.to_list(length=None)
+
+    # Apply dietary restrictions filter
+    dietary_restrictions = dietary_prefs.get("dietary_restrictions", [])
+    if dietary_restrictions:
+        # Filter meals that match ALL dietary restrictions
+        for restriction in dietary_restrictions:
+            meals = [
+                meal
+                for meal in meals
+                if check_meal_matches_dietary_restriction(meal, restriction)
+            ]
+
+    # Prefer cuisine preferences if specified
+    cuisine_prefs = dietary_prefs.get("cuisine_preferences", [])
+    if cuisine_prefs:
+        preferred_meals = [m for m in meals if m.get("cuisine_type") in cuisine_prefs]
+        other_meals = [m for m in meals if m.get("cuisine_type") not in cuisine_prefs]
+        meals = preferred_meals + other_meals
+
+    # Fetch sellers for each meal
+    meal_responses = []
+    for meal in meals[:limit]:
+        seller = await db.users.find_one({"_id": meal["seller_id"]})
+        if seller:
+            meal_responses.append(meal_to_response(meal, seller))
+
+    return meal_responses
+
+
 # Update a meal
 @router.put("/{meal_id}", response_model=MealResponse)
 async def update_meal(
@@ -210,6 +453,10 @@ async def update_meal(
         update_data["cuisine_type"] = meal_update.cuisine_type
     if meal_update.meal_type is not None:
         update_data["meal_type"] = meal_update.meal_type
+    if meal_update.ingredients is not None:
+        update_data["ingredients"] = [
+            ing.model_dump() for ing in meal_update.ingredients
+        ]
     if meal_update.photos is not None:
         update_data["photos"] = meal_update.photos
     if meal_update.allergen_info is not None:
