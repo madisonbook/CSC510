@@ -47,7 +47,8 @@ export default function MyMealsTab({ userLocation }) {
     nutritionInfo: '',
     pickupAddress: ''
   });
-  const [photosFiles, setPhotosFiles] = useState([]);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   // fetch existing meals
   useEffect(() => {
@@ -75,14 +76,15 @@ export default function MyMealsTab({ userLocation }) {
     const now = new Date();
     const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hrs later
 
-    // upload photos first (if any files selected)
-    let photoUrls = ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"];
-    if (photosFiles && photosFiles.length > 0) {
+    // upload single photo if selected
+    let photoUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800";
+    if (photoFile) {
       try {
-        photoUrls = await uploadPhotos(photosFiles);
+        const urls = await uploadPhotos([photoFile]);
+        photoUrl = urls[0]; // Take the first URL since we only upload one image
       } catch (err) {
         console.error('Photo upload failed:', err);
-        alert('Failed to upload photos');
+        alert('Failed to upload photo');
         setLoading(false);
         return;
       }
@@ -93,7 +95,7 @@ export default function MyMealsTab({ userLocation }) {
       description: formData.description,
       cuisine_type: formData.cuisine.replace(/^[^\w]+/, ""),
       meal_type: "Lunch",
-      photos: photoUrls,
+      photos: [photoUrl],
       portion_size: `${formData.servings} servings`,
       available_for_sale: true,
       sale_price: parseFloat(formData.price) || 0,
@@ -119,17 +121,19 @@ export default function MyMealsTab({ userLocation }) {
 
       // Reset form
       setFormData({
-      name: '',
-      description: '',
-      cuisine: '',
-      price: '',
-      servings: '',
-      allergens: [],
-      isSwapAvailable: false,
-      ingredients: '',
-      nutritionInfo: '',
-      pickupAddress: ''
-    });
+        name: '',
+        description: '',
+        cuisine: '',
+        price: '',
+        servings: '',
+        allergens: [],
+        isSwapAvailable: false,
+        ingredients: '',
+        nutritionInfo: '',
+        pickupAddress: ''
+      });
+      setPhotoFile(null);
+      setPhotoPreview(null);
     } catch (error) {
       console.error("Error adding meal: ", error);
       alert(error.message);
@@ -313,16 +317,58 @@ export default function MyMealsTab({ userLocation }) {
 
                   {/* Photo upload */}
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="photos" className="text-sm">Photos (optional)</Label>
-                    <input
-                      id="photos"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => setPhotosFiles(e.target.files)}
-                      className="text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">You can upload multiple images. They will be uploaded and attached to the meal.</p>
+                    <Label htmlFor="photo" className="text-sm">Photo (optional)</Label>
+                    <div className="flex flex-col items-center gap-2">
+                      {photoPreview ? (
+                        <div className="relative w-full h-48">
+                          <img
+                            src={photoPreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => {
+                              setPhotoFile(null);
+                              setPhotoPreview(null);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full h-48 flex flex-col items-center justify-center gap-2"
+                          onClick={() => document.getElementById('photo-upload').click()}
+                        >
+                          <Plus className="h-8 w-8" />
+                          <span>Click to upload a photo</span>
+                        </Button>
+                      )}
+                      <input
+                        id="photo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setPhotoFile(file);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setPhotoPreview(reader.result);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Upload a single image for your meal listing.</p>
                   </div>
 
                   {/* Description */}

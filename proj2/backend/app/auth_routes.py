@@ -47,9 +47,9 @@ async def register_user(user: UserCreate):
         "dietary_preferences": DietaryPreferences().dict(),
         "social_media": SocialMediaLinks().dict(),
         "role": UserRole.USER,
-        "status": AccountStatus.PENDING,
+        "status": AccountStatus.ACTIVE,
         "stats": UserStats().dict(),
-        "verified": False,
+        "verified": True,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
@@ -57,22 +57,8 @@ async def register_user(user: UserCreate):
     # Insert user
     result = await db.users.insert_one(user_doc)
     
-    # Generate verification token
-    token = generate_verification_token()
-    token_doc = {
-        "email": user.email,
-        "token": token,
-        "token_type": "email_verification",
-        "expires_at": datetime.utcnow() + timedelta(hours=24),
-        "created_at": datetime.utcnow()
-    }
-    await db.verification_tokens.insert_one(token_doc)
-    
-    # Send verification email
-    send_verification_email(user.email, token, "user")
-    
     return {
-        "message": "User account created successfully. Please check your email to verify your account.",
+        "message": "User account created successfully.",
         "user_id": str(result.inserted_id),
         "email": user.email
     }
