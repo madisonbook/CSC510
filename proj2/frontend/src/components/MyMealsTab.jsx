@@ -27,7 +27,7 @@ const AVAILABLE_CUISINES = [
   '🧆 Middle Eastern', '🥖 French'
 ];
 
-export default function MyMealsTab({ userLocation }) {
+export default function MyMealsTab({ userLocation, onMealsUpdate }) {
   const [meals, setMeals] = useState([]);
   const [editMeal, setEditMeal] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -45,7 +45,7 @@ export default function MyMealsTab({ userLocation }) {
     allergens: [],
     isSwapAvailable: false,
     ingredients: '',
-    nutritionInfo: { calories: '', protein_grams: '', carbs_grams: '', fat_grams: '' },
+    nutritionInfo: '',
     pickupAddress: '',
   });
   const [photoFile, setPhotoFile] = useState(null);
@@ -116,6 +116,12 @@ export default function MyMealsTab({ userLocation }) {
       const newMeal = await createMeal(mealData);
       const updatedMeals = await getMyMeals();
       setMeals(updatedMeals);
+      
+      // Notify parent component of the update
+      if (onMealsUpdate) {
+        onMealsUpdate(updatedMeals);
+      }
+      
       setIsAddDialogOpen(false);
 
       // Reset form
@@ -128,7 +134,7 @@ export default function MyMealsTab({ userLocation }) {
         allergens: [],
         isSwapAvailable: false,
         ingredients: '',
-        nutritionInfo: { calories: '', protein_grams: '', carbs_grams: '', fat_grams: '' },
+        nutritionInfo: '',
         pickupAddress: ''
       });
       setPhotoFile(null);
@@ -143,7 +149,13 @@ export default function MyMealsTab({ userLocation }) {
   const handleDeleteMeal = async (mealId) => {
     try {
       await deleteMeal(mealId);
-      setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
+      const updatedMeals = meals.filter((meal) => meal.id !== mealId);
+      setMeals(updatedMeals);
+      
+      // Notify parent component of the update
+      if (onMealsUpdate) {
+        onMealsUpdate(updatedMeals);
+      }
     } catch (error) {
       console.error("Error deleting meal: ", error);
       toast.error(error.message);
@@ -634,7 +646,7 @@ export default function MyMealsTab({ userLocation }) {
                             <div className="text-xs sm:text-sm">
                               <span className="font-medium">Nutrition: </span>
                               <span className="text-muted-foreground">
-                                {`Calories: ${meal.nutrition_info.calories || "N/A"}, Protein: ${meal.nutrition_info.protein_grams || "N/A"}g, Carbs: ${meal.nutrition_info.carbs_grams || "N/A"}g, Fat: ${meal.nutrition_info.fat_grams || "N/A"}g`}
+                                {meal.nutrition_info}
                               </span>
                             </div>
                             )}                 
@@ -833,61 +845,6 @@ export default function MyMealsTab({ userLocation }) {
               className="resize-none text-sm"
             />
           </div>
-
-        {/* Nutrition Info (Optional) */}
-        <div className="space-y-1.5 sm:space-y-2">
-          <Label className="text-sm">Nutrition Info (Optional)</Label>
-          <div className="grid sm:grid-cols-4 gap-3">
-          <Input
-            type="number"
-            placeholder="Calories"
-            value={formData.nutritionInfo?.calories || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, calories: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-          <Input
-            type="number"
-            placeholder="Protein (g)"
-            value={formData.nutritionInfo?.protein_grams || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, protein_grams: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-          <Input
-            type="number"
-            placeholder="Carbs (g)"
-            value={formData.nutritionInfo?.carbs_grams || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, carbs_grams: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-          <Input
-            type="number"
-            placeholder="Fat (g)"
-            value={formData.nutritionInfo?.fat_grams || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, fat_grams: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-        </div>
-        </div>
 
           {/* Swap Available */}
           <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">

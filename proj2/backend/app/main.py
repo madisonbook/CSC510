@@ -12,6 +12,7 @@ from .routes.meal_routes import router as meal_router
 from pymongo import ASCENDING
 from . import seed_data
 
+
 async def wait_for_mongo(retries: int = 60, delay: float = 1.0):
     db = get_database()
     for _ in range(retries):
@@ -22,12 +23,14 @@ async def wait_for_mongo(retries: int = 60, delay: float = 1.0):
             await asyncio.sleep(delay)
     raise RuntimeError("MongoDB not ready after waiting")
 
+
 async def run_seed_once():
     db = get_database()
     if await db["_meta"].find_one({"key": "seed_done"}):
         return
     await seed_data.seed()
     await db["_meta"].insert_one({"key": "seed_done", "at": datetime.utcnow()})
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -49,6 +52,7 @@ app = FastAPI(
 static_dir = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 
 @app.on_event("startup")
 async def startup_event():

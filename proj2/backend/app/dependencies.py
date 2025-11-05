@@ -52,7 +52,9 @@ async def get_current_user(
             is_verified = verified_val.lower() in ("true", "1", "yes")
 
         if not is_verified:
-            print(f"[auth] user present but not verified according to DB value: {repr(verified_val)}")
+            print(
+                f"[auth] user present but not verified according to DB value: {repr(verified_val)}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified"
             )

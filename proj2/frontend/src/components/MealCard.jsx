@@ -140,7 +140,7 @@ export default function MealCard({
                             <div className="text-xs sm:text-sm">
                               <span className="font-medium">Nutrition: </span>
                               <span className="text-muted-foreground">
-                                {`Calories: ${meal.nutrition_info.calories || "N/A"}, Protein: ${meal.nutrition_info.protein_grams || "N/A"}g, Carbs: ${meal.nutrition_info.carbs_grams || "N/A"}g, Fat: ${meal.nutrition_info.fat_grams || "N/A"}g`}
+                                {meal.nutrition_info}
                               </span>
                             </div>
                             )}                 

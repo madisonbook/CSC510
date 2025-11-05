@@ -33,7 +33,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     print("verify_password types:", type(plain), type(hashed_password))
     print("hashed_password repr:", repr(hashed_password))
 
-    if DEV_PLAINTEXT and isinstance(hashed_password, str) and not hashed_password.startswith("$2"):
+    if (
+        DEV_PLAINTEXT
+        and isinstance(hashed_password, str)
+        and not hashed_password.startswith("$2")
+    ):
         return plain == hashed_password
 
     try:
@@ -57,7 +61,9 @@ def create_verification_token_hash(email: str, token: str) -> str:
 def send_verification_email(email: str, token: str, user_type: str = "user"):
     """Send (or simulate sending) verification email"""
     BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
-    verification_link = f"{BASE_URL}/api/auth/verify?email={email}&token={token}&type={user_type}"
+    verification_link = (
+        f"{BASE_URL}/api/auth/verify?email={email}&token={token}&type={user_type}"
+    )
 
     # If SMTP configuration is not provided, fall back to printing the link.
     SMTP_SERVER = os.getenv("SMTP_SERVER")

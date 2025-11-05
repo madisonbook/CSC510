@@ -25,7 +25,7 @@ async def seed():
                     "allergens": ["shellfish"],
                     "price_range": "$$",
                     "max_distance": 25,
-                    "cuisine_preferences": ["Italian", "Mediterranean", "French"]
+                    "cuisine_preferences": ["Italian", "Mediterranean", "French"],
                 },
                 "location": {
                     "address": "123 Main St",
@@ -51,7 +51,7 @@ async def seed():
                     "allergens": ["peanuts"],
                     "price_range": "$$$",
                     "max_distance": 15,
-                    "cuisine_preferences": ["Japanese", "Korean", "Thai"]
+                    "cuisine_preferences": ["Japanese", "Korean", "Thai"],
                 },
                 "location": {
                     "address": "456 Oak Ave",
@@ -77,7 +77,7 @@ async def seed():
                     "allergens": ["gluten"],
                     "price_range": "$$",
                     "max_distance": 20,
-                    "cuisine_preferences": ["Mexican", "Latino", "Spanish"]
+                    "cuisine_preferences": ["Mexican", "Latino", "Spanish"],
                 },
                 "location": {
                     "address": "789 Pine St",
@@ -103,7 +103,7 @@ async def seed():
                     "allergens": ["dairy"],
                     "price_range": "$$",
                     "max_distance": 10,
-                    "cuisine_preferences": ["Chinese", "Asian", "Vietnamese"]
+                    "cuisine_preferences": ["Chinese", "Asian", "Vietnamese"],
                 },
                 "location": {
                     "address": "321 Elm St",
@@ -129,7 +129,11 @@ async def seed():
                     "allergens": [],
                     "price_range": "$$",
                     "max_distance": 15,
-                    "cuisine_preferences": ["Indian", "Middle Eastern", "Mediterranean"]
+                    "cuisine_preferences": [
+                        "Indian",
+                        "Middle Eastern",
+                        "Mediterranean",
+                    ],
                 },
                 "location": {
                     "address": "567 Maple Ave",
@@ -155,7 +159,7 @@ async def seed():
                     "allergens": [],
                     "price_range": "$$$$",
                     "max_distance": 50,
-                    "cuisine_preferences": ["American", "Italian", "Japanese"]
+                    "cuisine_preferences": ["American", "Italian", "Japanese"],
                 },
                 "location": {
                     "address": "1 Admin Plaza",
@@ -191,15 +195,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "3 servings",
-                "allergen_info": {
-                    "contains": [],
-                    "may_contain": ["dairy"]
-                },
+                "allergen_info": {"contains": [], "may_contain": ["dairy"]},
                 "ingredients": "Ground beef, Kidney beans, Black beans, Diced tomatoes, Onions, Bell peppers, Chili spices",
-                "nutrition_info": {
-                    "details": "Calories: 380, Protein: 25g, Carbs: 30g, Fat: 18g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800"],
+                "nutrition_info": "Calories: 380, Protein: 25g, Carbs: 30g, Fat: 18g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800"
+                ],
                 "pickup_instructions": "Can meet at the lobby or front entrance anytime today until 9 PM",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -217,15 +218,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "3 servings",
-                "allergen_info": {
-                    "contains": ["eggs", "soy"],
-                    "may_contain": []
-                },
+                "allergen_info": {"contains": ["eggs", "soy"], "may_contain": []},
                 "ingredients": "Rice, Chicken, Eggs, Mixed vegetables, Soy sauce, Green onions, Garlic",
-                "nutrition_info": {
-                    "details": "Calories: 400, Protein: 22g, Carbs: 45g, Fat: 15g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800"],
+                "nutrition_info": "Calories: 400, Protein: 22g, Carbs: 45g, Fat: 15g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800"
+                ],
                 "pickup_instructions": "I'm in building 2, can meet you in the lobby anytime tonight",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -243,15 +241,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "2 servings",
-                "allergen_info": {
-                    "contains": ["dairy"],
-                    "may_contain": ["gluten"]
-                },
+                "allergen_info": {"contains": ["dairy"], "may_contain": ["gluten"]},
                 "ingredients": "Corn tortillas, Shredded chicken, Enchilada sauce, Cheese, Onions, Garlic, Mexican spices",
-                "nutrition_info": {
-                    "details": "Calories: 420, Protein: 28g, Carbs: 35g, Fat: 22g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1534352956036-cd81e27dd615?w=800"],
+                "nutrition_info": "Calories: 420, Protein: 28g, Carbs: 35g, Fat: 22g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1534352956036-cd81e27dd615?w=800"
+                ],
                 "pickup_instructions": "I'm around all evening, just message when you want to pick up!",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -269,15 +264,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "3 servings",
-                "allergen_info": {
-                    "contains": ["dairy", "gluten"],
-                    "may_contain": []
-                },
+                "allergen_info": {"contains": ["dairy", "gluten"], "may_contain": []},
                 "ingredients": "Macaroni, Cheddar cheese, Mozzarella, Milk, Butter, Breadcrumbs, Seasonings",
-                "nutrition_info": {
-                    "details": "Calories: 450, Protein: 18g, Carbs: 48g, Fat: 22g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=800"],
+                "nutrition_info": "Calories: 450, Protein: 18g, Carbs: 48g, Fat: 22g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=800"
+                ],
                 "pickup_instructions": "Available now until midnight, just ping me!",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -295,15 +287,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "2 servings",
-                "allergen_info": {
-                    "contains": ["dairy"],
-                    "may_contain": ["nuts"]
-                },
+                "allergen_info": {"contains": ["dairy"], "may_contain": ["nuts"]},
                 "ingredients": "Chicken, Tomato sauce, Butter, Cream, Basmati rice, Indian spices, Garlic, Ginger",
-                "nutrition_info": {
-                    "details": "Calories: 550, Protein: 32g, Carbs: 45g, Fat: 28g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800"],
+                "nutrition_info": "Calories: 550, Protein: 32g, Carbs: 45g, Fat: 28g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800"
+                ],
                 "pickup_instructions": "I'm in the east building, can meet in common area",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -323,13 +312,13 @@ async def seed():
                 "portion_size": "12 cookies",
                 "allergen_info": {
                     "contains": ["gluten", "dairy", "eggs"],
-                    "may_contain": ["nuts"]
+                    "may_contain": ["nuts"],
                 },
                 "ingredients": "Flour, Butter, Chocolate chips, Brown sugar, Eggs, Vanilla",
-                "nutrition_info": {
-                    "details": "Calories: 150 per cookie, Sugar: 12g, Fat: 7g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800"],
+                "nutrition_info": "Calories: 150 per cookie, Sugar: 12g, Fat: 7g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=800"
+                ],
                 "pickup_instructions": "Just baked them! Come by anytime tonight!",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -347,15 +336,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "4 large slices",
-                "allergen_info": {
-                    "contains": ["gluten", "dairy"],
-                    "may_contain": []
-                },
+                "allergen_info": {"contains": ["gluten", "dairy"], "may_contain": []},
                 "ingredients": "Pizza dough, Mozzarella, Chicken, BBQ sauce, Tomatoes, Basil, Olive oil",
-                "nutrition_info": {
-                    "details": "Calories: 250 per slice, Protein: 12g, Carbs: 30g, Fat: 10g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800"],
+                "nutrition_info": "Calories: 250 per slice, Protein: 12g, Carbs: 30g, Fat: 10g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800"
+                ],
                 "pickup_instructions": "In building 3, can meet in the common room!",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -373,15 +359,12 @@ async def seed():
                 "available_for_sale": True,
                 "available_for_swap": True,
                 "portion_size": "3 servings",
-                "allergen_info": {
-                    "contains": ["dairy", "gluten"],
-                    "may_contain": []
-                },
+                "allergen_info": {"contains": ["dairy", "gluten"], "may_contain": []},
                 "ingredients": "Ziti pasta, Italian sausage, Ricotta, Mozzarella, Parmesan, Marinara sauce, Italian herbs",
-                "nutrition_info": {
-                    "details": "Calories: 480, Protein: 25g, Carbs: 45g, Fat: 24g"
-                },
-                "photos": ["https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800"],
+                "nutrition_info": "Calories: 480, Protein: 25g, Carbs: 45g, Fat: 24g",
+                "photos": [
+                    "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800"
+                ],
                 "pickup_instructions": "Free all evening, just message me to meet up!",
                 "preparation_date": now,
                 "expires_date": expires_short,
@@ -392,4 +375,6 @@ async def seed():
 
         meals_result = await db.meals.insert_many(meals)
 
-        print(f"✅ Seeded {len(result.inserted_ids)} users and {len(meals_result.inserted_ids)} meals")
+        print(
+            f"✅ Seeded {len(result.inserted_ids)} users and {len(meals_result.inserted_ids)} meals"
+        )

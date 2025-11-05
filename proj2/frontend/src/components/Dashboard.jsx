@@ -5,6 +5,8 @@ import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Badge } from './ui/badge';
+import BadgeCard from './BadgeCard';
+import { BADGE_DEFINITIONS, checkEarnedBadges, getBadgeProgress } from '../utils/badges';
 import { LogOut, Settings, User, Star } from 'lucide-react';
 import { PreferencesTab } from './PreferencesTab';
 import RecommendationsTab from './RecommendationsTab';
@@ -338,28 +340,66 @@ export default function Dashboard({ onLogout }) {
               onAddMeal={handleAddMeal}
               onDeleteMeal={handleDeleteMeal}
               userLocation={preferences.userLocation}
+              onMealsUpdate={setMyMeals}
             />
           </TabsContent>
 
-          <TabsContent value="badges">
+          <TabsContent value="badges" key={myMeals.length}>
             <div className="space-y-4 sm:space-y-6">
               <div>
-                <h2 className="text-xl sm:text-2xl mb-2">Your Badges</h2>
+                <h2 className="text-xl sm:text-2xl font-bold mb-2">Achievement Badges</h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                  Earn badges for great reviews, successful swaps, and being an active community member
+                  Earn badges for posting meals, getting great reviews, and being an active community member
                 </p>
+                {user?.stats && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Badge variant="outline">
+                      {((user.stats.total_meals_sold || 0) + (user.stats.total_meals_swapped || 0)) || myMeals.length} meals posted
+                    </Badge>
+                    <Badge variant="outline">
+                      {user.stats.total_meals_swapped || 0} swaps completed
+                    </Badge>
+                    <Badge variant="outline">
+                      {(user.stats.average_rating || 0).toFixed(1)} ⭐ average rating
+                    </Badge>
+                  </div>
+                )}
               </div>
-              <div className="text-center py-12 space-y-4">
-                <div className="text-6xl">🏆</div>
-                <h3 className="text-xl">No badges yet</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Start rating meals and participating in swaps to earn your first badge!
+              
+              {/* Badge Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {BADGE_DEFINITIONS.map((badge) => {
+                  const earnedBadges = checkEarnedBadges(user?.stats || {}, myMeals);
+                  const isEarned = earnedBadges.includes(badge.id);
+                  const progress = getBadgeProgress(badge.id, user?.stats || {}, myMeals);
+                  
+                  return (
+                    <BadgeCard
+                      key={badge.id}
+                      badge={badge}
+                      isEarned={isEarned}
+                      progress={progress}
+                    />
+                  );
+                })}
+              </div>
+              
+              {/* Summary */}
+              <div className="mt-6 p-4 bg-muted rounded-lg text-center">
+                <p className="text-sm text-muted-foreground">
+                  {(() => {
+                    const earnedCount = checkEarnedBadges(user?.stats || {}, myMeals).length;
+                    const totalCount = BADGE_DEFINITIONS.length;
+                    const percentage = Math.round((earnedCount / totalCount) * 100);
+                    
+                    return (
+                      <>
+                        You've earned <span className="font-bold text-foreground">{earnedCount}</span> of{' '}
+                        <span className="font-bold text-foreground">{totalCount}</span> badges ({percentage}%)
+                      </>
+                    );
+                  })()}
                 </p>
-                <div className="pt-4">
-                  <p className="text-sm text-muted-foreground italic">
-                    Feature coming soon: View and showcase your earned badges
-                  </p>
-                </div>
               </div>
             </div>
           </TabsContent>
