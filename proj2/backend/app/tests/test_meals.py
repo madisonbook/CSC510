@@ -846,7 +846,7 @@ async def sample_meal_data():
         "meal_type": "Dinner",
         "photos": ["https://example.com/pasta.jpg"],
         "allergen_info": {"contains": ["gluten", "dairy"], "may_contain": ["nuts"]},
-    "nutrition_info": "Calories: 450; Protein: 15g; Carbs: 60g; Fat: 12g",
+        "nutrition_info": "Calories: 450; Protein: 15g; Carbs: 60g; Fat: 12g",
         "portion_size": "2 servings",
         "available_for_sale": True,
         "sale_price": 15.00,
@@ -877,7 +877,7 @@ async def test_meal_to_response_complete():
         "meal_type": "Dinner",
         "photos": ["photo1.jpg"],
         "allergen_info": {"contains": ["gluten"]},
-    "nutrition_info": "Calories: 500",
+        "nutrition_info": "Calories: 500",
         "portion_size": "2 servings",
         "available_for_sale": True,
         "sale_price": 10.00,
@@ -948,7 +948,8 @@ async def test_create_meal_with_nutrition_info(
     assert response.status_code == 201
     data = response.json()
     assert isinstance(data["nutrition_info"], str)
-    assert "Calories" in data["nutrition_info"] and "450" in data["nutrition_info"]
+    assert "Calories" in data["nutrition_info"]
+    assert "450" in data["nutrition_info"]
 
 
 @pytest.mark.asyncio
@@ -1394,7 +1395,7 @@ async def test_update_meal_all_fields(
         "meal_type": "Dinner",
         "photos": [],
         "allergen_info": {"contains": []},
-    "nutrition_info": "Calories: 100",
+        "nutrition_info": "Calories: 100",
         "portion_size": "1",
         "available_for_sale": True,
         "sale_price": 10.00,
@@ -1419,7 +1420,7 @@ async def test_update_meal_all_fields(
         "meal_type": "Lunch",
         "photos": ["new_photo.jpg"],
         "allergen_info": {"contains": ["nuts"]},
-    "nutrition_info": "Calories: 500",
+        "nutrition_info": "Calories: 500",
         "portion_size": "4 servings",
         "available_for_sale": False,
         "sale_price": 25.00,
