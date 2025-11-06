@@ -1563,6 +1563,7 @@ async def test_update_profile_picture_persists_authenticated(authenticated_clien
     if resp.status_code == 200:
         assert resp.json().get("profile_picture") == body["profile_picture"]
 
+
 @pytest.mark.asyncio
 async def test_get_user_by_id_not_found_endpoint(async_client):
     """Test GET /api/users/{user_id} with non-existent ID"""

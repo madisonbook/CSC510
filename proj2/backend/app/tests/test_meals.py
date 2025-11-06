@@ -1727,7 +1727,9 @@ async def test_get_meals_min_rating_filter(meal_async_client, mongo_client, test
 
 
 @pytest.mark.asyncio
-async def test_get_meals_sort_created_at_desc(meal_async_client, mongo_client, test_user):
+async def test_get_meals_sort_created_at_desc(
+    meal_async_client, mongo_client, test_user
+):
     """Meals are sorted by created_at desc by default."""
     db = mongo_client[TEST_DB_NAME]
     older = {
@@ -1815,7 +1817,12 @@ async def test_dietary_filter_vegan_excludes_dairy(
         "expires_date": datetime.utcnow() + timedelta(days=1),
         "updated_at": datetime.utcnow(),
     }
-    plant = dict(dairy, title="Vegan Bowl", allergen_info={"contains": []}, ingredients="quinoa, beans")
+    plant = dict(
+        dairy,
+        title="Vegan Bowl",
+        allergen_info={"contains": []},
+        ingredients="quinoa, beans",
+    )
     await db.meals.insert_many([dairy, plant])
     resp = await meal_async_client.get("/api/meals/?dietary_restriction=vegan")
     titles = [m["title"] for m in resp.json()]
@@ -1844,7 +1851,12 @@ async def test_dietary_filter_gluten_free_excludes_wheat(
         "expires_date": datetime.utcnow() + timedelta(days=1),
         "updated_at": datetime.utcnow(),
     }
-    gf = dict(wheat, title="Gluten Free", allergen_info={"contains": []}, ingredients="eggs, avocado")
+    gf = dict(
+        wheat,
+        title="Gluten Free",
+        allergen_info={"contains": []},
+        ingredients="eggs, avocado",
+    )
     await db.meals.insert_many([wheat, gf])
     resp = await meal_async_client.get("/api/meals/?dietary_restriction=gluten-free")
     titles = [m["title"] for m in resp.json()]
@@ -1873,7 +1885,12 @@ async def test_dietary_filter_dairy_free_excludes_milk(
         "expires_date": datetime.utcnow() + timedelta(days=1),
         "updated_at": datetime.utcnow(),
     }
-    alt = dict(milk, title="Fruit Cup", allergen_info={"contains": []}, ingredients="strawberries, banana")
+    alt = dict(
+        milk,
+        title="Fruit Cup",
+        allergen_info={"contains": []},
+        ingredients="strawberries, banana",
+    )
     await db.meals.insert_many([milk, alt])
     resp = await meal_async_client.get("/api/meals/?dietary_restriction=dairy-free")
     titles = [m["title"] for m in resp.json()]
@@ -1902,7 +1919,9 @@ async def test_dietary_filter_nut_free_excludes_peanuts(
         "expires_date": datetime.utcnow() + timedelta(days=1),
         "updated_at": datetime.utcnow(),
     }
-    safe = dict(nuts, title="Oat Bar", allergen_info={"contains": []}, ingredients="oats, honey")
+    safe = dict(
+        nuts, title="Oat Bar", allergen_info={"contains": []}, ingredients="oats, honey"
+    )
     await db.meals.insert_many([nuts, safe])
     resp = await meal_async_client.get("/api/meals/?dietary_restriction=nut-free")
     titles = [m["title"] for m in resp.json()]
@@ -1958,7 +1977,12 @@ async def test_recommendations_exclude_user_allergens(
             "_id": other_seller,
             "email": "seller@example.com",
             "full_name": "Seller User",
-            "location": {"address": "1 St", "city": "C", "state": "ST", "zip_code": "00000"},
+            "location": {
+                "address": "1 St",
+                "city": "C",
+                "state": "ST",
+                "zip_code": "00000",
+            },
             "role": "user",
             "status": "active",
             "stats": {"average_rating": 4.0, "total_reviews": 0},
@@ -1982,7 +2006,9 @@ async def test_recommendations_exclude_user_allergens(
         "expires_date": datetime.utcnow() + timedelta(days=1),
         "updated_at": datetime.utcnow(),
     }
-    good = dict(bad, title="Veg Soup", allergen_info={"contains": []}, ingredients="veggies")
+    good = dict(
+        bad, title="Veg Soup", allergen_info={"contains": []}, ingredients="veggies"
+    )
     await db.meals.insert_many([bad, good])
     resp = await authenticated_meal_client.get("/api/meals/my/recommendations")
     assert resp.status_code == 200

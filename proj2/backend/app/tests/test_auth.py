@@ -522,6 +522,7 @@ async def test_multiple_concurrent_registrations(
     users = await clean_db.users.find({}).to_list(None)
     assert len(users) == 5
 
+
 @pytest.mark.asyncio
 async def test_register_name_with_emoji(async_client, clean_db, sample_user_data):
     data = sample_user_data.copy()
@@ -541,7 +542,9 @@ async def test_register_extremely_long_email(async_client, sample_user_data):
 
 
 @pytest.mark.asyncio
-async def test_login_email_with_whitespace(async_client, registered_user, sample_user_data):
+async def test_login_email_with_whitespace(
+    async_client, registered_user, sample_user_data
+):
     resp = await async_client.post(
         "/api/auth/login",
         json={
@@ -556,7 +559,9 @@ async def test_login_email_with_whitespace(async_client, registered_user, sample
 
 
 @pytest.mark.asyncio
-async def test_login_password_case_sensitivity(async_client, registered_user, sample_user_data):
+async def test_login_password_case_sensitivity(
+    async_client, registered_user, sample_user_data
+):
     wrong_case = sample_user_data["password"].swapcase()
     resp = await async_client.post(
         "/api/auth/login",

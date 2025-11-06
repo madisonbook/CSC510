@@ -881,6 +881,7 @@ async def test_startup_handles_database_errors_gracefully():
         # Restore
         database_module.database = original_database
 
+
 @pytest.mark.asyncio
 async def test_openapi_includes_meals_and_users(async_client):
     resp = await async_client.get("/openapi.json")
