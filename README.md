@@ -32,11 +32,7 @@ At Taste Buddiez, we believe food is more than just fuel — it’s a connection
 * Frontend: React (Port 5173)
 * Containerization: Docker & Docker Compose
 
-## Quick Start Guide
-
-### 0. Prerequisites
-Ensure you have the following installed
-1. Git (for cloning the repository)
+## Quick Start Guide: SEE [INSTALL.MD](https://github.com/madisonbook/CSC510/blob/main/proj2/documentation/INSTALL.md)
 
 ### 1. Clone the Repository
 1. navigate to the directory where you want to store the software
