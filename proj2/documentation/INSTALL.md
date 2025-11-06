@@ -14,7 +14,7 @@ Before installing TasteBuddiez, ensure you have the following installed on your 
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone <https://github.com/madisonbook/CSC510.git>
 cd tastebuddiez
 ```
 
@@ -168,7 +168,7 @@ tastebuddiez test all --build --coverage
 The CLI expects the following project structure:
 
 ```
-tastebuddiez/
+proj2/
 ├── docker-compose.yml
 ├── frontend/
 │   └── dist/
