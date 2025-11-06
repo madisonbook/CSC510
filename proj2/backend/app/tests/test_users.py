@@ -7,7 +7,6 @@ import pytest
 import pytest_asyncio
 from datetime import datetime
 from bson import ObjectId
-from unittest.mock import patch
 
 # Test configuration
 TEST_DB_NAME = "test_meal_db"
@@ -662,28 +661,6 @@ async def test_user_with_special_characters(mongo_client):
 
     # Cleanup
     await db.users.delete_one({"_id": result.inserted_id})
-
-
-@pytest.mark.asyncio
-async def test_user_email_uniqueness(mongo_client, test_user):
-    """Test that duplicate emails are handled"""
-    db = mongo_client[TEST_DB_NAME]
-
-    # Try to create user with same email
-    duplicate_user = {
-        "email": test_user["email"],  # Same email
-        "full_name": "Duplicate User",
-        "phone": "9999999999",
-        "location": {
-            "address": "999 Dup St",
-            "city": "Test City",
-            "state": "TS",
-            "zip_code": "12345",
-        },
-        "role": "user",
-        "status": "active",
-        "created_at": datetime.utcnow(),
-    }
 
     # ============================================================
 
@@ -1433,7 +1410,6 @@ async def test_updated_at_timestamp(mongo_client, test_user):
 @pytest.mark.asyncio
 async def test_get_my_profile_endpoint(async_client, mongo_client, test_user):
     """Test GET /api/users/me endpoint"""
-    db = mongo_client[TEST_DB_NAME]
 
     # Mock authentication by adding authorization header
     # Note: Adjust this based on your actual auth implementation
@@ -1450,7 +1426,6 @@ async def test_get_my_profile_endpoint(async_client, mongo_client, test_user):
 @pytest.mark.asyncio
 async def test_get_user_by_id_endpoint_success(async_client, mongo_client, test_user):
     """Test GET /api/users/{user_id} endpoint with valid ID"""
-    db = mongo_client[TEST_DB_NAME]
 
     user_id = str(test_user["_id"])
 
@@ -1580,7 +1555,6 @@ async def test_get_user_by_id_not_found_endpoint(async_client):
 @pytest.mark.asyncio
 async def test_update_my_profile_endpoint(async_client, mongo_client, test_user):
     """Test PUT /api/users/me endpoint"""
-    db = mongo_client[TEST_DB_NAME]
 
     update_data = {
         "full_name": "Updated Name",
@@ -1604,7 +1578,6 @@ async def test_update_my_profile_all_fields_endpoint(
     async_client, mongo_client, test_user
 ):
     """Test PUT /api/users/me with all updatable fields"""
-    db = mongo_client[TEST_DB_NAME]
 
     update_data = {
         "full_name": "Complete Update",
@@ -1641,7 +1614,6 @@ async def test_update_my_profile_no_changes_endpoint(
     async_client, mongo_client, test_user
 ):
     """Test PUT /api/users/me when no actual changes are made"""
-    db = mongo_client[TEST_DB_NAME]
 
     # Send empty update or same values
     update_data = {}
@@ -1661,7 +1633,6 @@ async def test_update_dietary_preferences_endpoint(
     async_client, mongo_client, test_user
 ):
     """Test PUT /api/users/me/dietary-preferences endpoint"""
-    db = mongo_client[TEST_DB_NAME]
 
     preferences = {
         "dietary_restrictions": ["vegetarian", "halal"],
@@ -1685,7 +1656,6 @@ async def test_update_dietary_preferences_no_changes_endpoint(
     async_client, mongo_client, test_user
 ):
     """Test dietary preferences update that results in no changes"""
-    db = mongo_client[TEST_DB_NAME]
 
     # Send same preferences
     preferences = test_user.get("dietary_preferences", {})
@@ -1703,7 +1673,6 @@ async def test_update_dietary_preferences_no_changes_endpoint(
 @pytest.mark.asyncio
 async def test_update_social_media_endpoint(async_client, mongo_client, test_user):
     """Test PUT /api/users/me/social-media endpoint"""
-    db = mongo_client[TEST_DB_NAME]
 
     social_media = {
         "facebook": "my_facebook",
@@ -1726,7 +1695,6 @@ async def test_update_social_media_no_changes_endpoint(
     async_client, mongo_client, test_user
 ):
     """Test social media update that results in no changes"""
-    db = mongo_client[TEST_DB_NAME]
 
     # Send same social media
     social_media = test_user.get("social_media", {})
@@ -1777,7 +1745,6 @@ async def test_delete_my_account_endpoint(async_client, mongo_client, test_user)
 @pytest.mark.asyncio
 async def test_delete_account_user_not_found_endpoint(async_client, mongo_client):
     """Test DELETE /api/users/me when user doesn't exist"""
-    db = mongo_client[TEST_DB_NAME]
 
     fake_user_id = ObjectId()
 
@@ -1792,7 +1759,6 @@ async def test_delete_account_user_not_found_endpoint(async_client, mongo_client
 @pytest.mark.asyncio
 async def test_get_my_stats_endpoint(async_client, mongo_client, test_user):
     """Test GET /api/users/me/stats endpoint"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await async_client.get(
         "/api/users/me/stats",
@@ -1880,7 +1846,6 @@ async def test_update_profile_authenticated(
     authenticated_client, mongo_client, test_user
 ):
     """Test PUT /api/users/me with proper authentication"""
-    db = mongo_client[TEST_DB_NAME]
 
     update_data = {"full_name": "Authenticated Update", "phone": "5551234567"}
 
@@ -1897,7 +1862,6 @@ async def test_update_profile_partial_authenticated(
     authenticated_client, mongo_client, test_user
 ):
     """Test partial profile update with authentication"""
-    db = mongo_client[TEST_DB_NAME]
 
     # Update only bio
     update_data = {"bio": "This is my new bio"}
@@ -1916,7 +1880,6 @@ async def test_update_dietary_preferences_authenticated(
     authenticated_client, mongo_client, test_user
 ):
     """Test PUT /api/users/me/dietary-preferences with authentication"""
-    db = mongo_client[TEST_DB_NAME]
 
     preferences = {
         "dietary_restrictions": ["gluten-free"],
@@ -1939,7 +1902,6 @@ async def test_update_social_media_authenticated(
     authenticated_client, mongo_client, test_user
 ):
     """Test PUT /api/users/me/social-media with authentication"""
-    db = mongo_client[TEST_DB_NAME]
 
     social_media = {
         "facebook": "auth_facebook",
@@ -2016,7 +1978,6 @@ async def test_update_all_fields_authenticated(
     authenticated_client, mongo_client, test_user
 ):
     """Test updating all possible fields at once"""
-    db = mongo_client[TEST_DB_NAME]
 
     update_data = {
         "full_name": "All Fields Updated",

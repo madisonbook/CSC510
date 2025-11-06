@@ -79,13 +79,17 @@ def send_verification_email(email: str, token: str, user_type: str = "user"):
 
     # Build email
     subject = "Verify your Taste Buddiez account"
-    text = f"Please verify your email by visiting the link: {verification_link}\n\nThis link expires in 24 hours."
+    text = (
+        f"Please verify your email by visiting the link:"
+        f"{verification_link}\n\nThis link expires in 24 hours."
+    )
     html = f"""
     <html>
       <body>
         <h2>Verify your Taste Buddiez account</h2>
         <p>Click the button below to verify your email address for your account.</p>
-        <p><a href=\"{verification_link}\" style=\"background:#f97316;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;\">Verify Email</a></p>
+        <p><a href=\"{verification_link}\" style=\"background:#f97316;color:#fff;padding:10px 16px;
+        border-radius:6px;text-decoration:none;\">Verify Email</a></p>
         <p>If the button doesn't work, paste this link into your browser:</p>
         <p>{verification_link}</p>
       </body>

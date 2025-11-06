@@ -32,7 +32,8 @@ async def get_current_user(
         # Debugging: print retrieved user summary
         if user:
             print(
-                f"[auth] found user: _id={user.get('_id')} email={user.get('email')} verified={user.get('verified')}"
+                f"[auth] found user: _id={user.get('_id')} email={user.get('email')}"
+                f" verified={user.get('verified')}"
             )
         else:
             print(f"[auth] no user found for token: {repr(token)}")

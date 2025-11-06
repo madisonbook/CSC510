@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timedelta
 from .database import get_database
 from .utils import hash_password
@@ -19,7 +18,8 @@ async def seed():
                 "verified": True,
                 "role": "user",
                 "status": "active",
-                "bio": "Passionate home cook specializing in Italian and Mediterranean cuisine. Love sharing my family recipes!",
+                "bio": "Passionate home cook specializing in Italian and Mediterranean cuisine."
+                " Love sharing my family recipes!",
                 "dietary_preferences": {
                     "dietary_restrictions": ["vegetarian-friendly"],
                     "allergens": ["shellfish"],
@@ -45,7 +45,8 @@ async def seed():
                 "verified": True,
                 "role": "user",
                 "status": "active",
-                "bio": "Asian fusion enthusiast and certified sushi chef. Specializing in Japanese and Korean dishes.",
+                "bio": "Asian fusion enthusiast and certified sushi chef. Specializing in Japanese"
+                " and Korean dishes.",
                 "dietary_preferences": {
                     "dietary_restrictions": [],
                     "allergens": ["peanuts"],
@@ -71,7 +72,8 @@ async def seed():
                 "verified": True,
                 "role": "user",
                 "status": "active",
-                "bio": "Mexican street food expert. Love sharing authentic family recipes passed down through generations.",
+                "bio": "Mexican street food expert. Love sharing authentic family recipes passed"
+                " down through generations.",
                 "dietary_preferences": {
                     "dietary_restrictions": ["gluten-free"],
                     "allergens": ["gluten"],
@@ -97,7 +99,8 @@ async def seed():
                 "verified": True,
                 "role": "user",
                 "status": "active",
-                "bio": "Experienced in traditional Chinese cuisine. Dim sum specialist with a modern twist.",
+                "bio": "Experienced in traditional Chinese cuisine."
+                " Dim sum specialist with a modern twist.",
                 "dietary_preferences": {
                     "dietary_restrictions": [],
                     "allergens": ["dairy"],
@@ -123,7 +126,8 @@ async def seed():
                 "verified": True,
                 "role": "user",
                 "status": "active",
-                "bio": "Indian cuisine expert specializing in vegetarian and vegan dishes. Love experimenting with spices!",
+                "bio": "Indian cuisine expert specializing in vegetarian and vegan dishes."
+                "Love experimenting with spices!",
                 "dietary_preferences": {
                     "dietary_restrictions": ["vegetarian"],
                     "allergens": [],
@@ -181,12 +185,12 @@ async def seed():
             email_to_id[user_doc["email"]] = inserted_id
 
         expires_short = now + timedelta(days=1)
-        expires_long = now + timedelta(days=2)
 
         meals = [
             {
                 "title": "Extra Homemade Chili",
-                "description": "Made a big pot of hearty chili with ground beef and beans! Have plenty extra to share. Great for a cozy dinner or lunch tomorrow.",
+                "description": "Made a big pot of hearty chili with ground beef and beans!"
+                " Have plenty extra to share. Great for a cozy dinner or lunch tomorrow.",
                 "sale_price": 8.00,
                 "cuisine_type": "American",
                 "meal_type": "Dinner",
@@ -196,12 +200,14 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "3 servings",
                 "allergen_info": {"contains": [], "may_contain": ["dairy"]},
-                "ingredients": "Ground beef, Kidney beans, Black beans, Diced tomatoes, Onions, Bell peppers, Chili spices",
+                "ingredients": "Ground beef, Kidney beans, Black beans, Diced tomatoes,"
+                " Onions, Bell peppers, Chili spices",
                 "nutrition_info": "Calories: 380, Protein: 25g, Carbs: 30g, Fat: 18g",
                 "photos": [
                     "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=800"
                 ],
-                "pickup_instructions": "Can meet at the lobby or front entrance anytime today until 9 PM",
+                "pickup_instructions": "Can meet at the lobby or front entrance anytime"
+                " today until 9 PM",
                 "preparation_date": now,
                 "expires_date": expires_short,
                 "created_at": now,
@@ -209,7 +215,8 @@ async def seed():
             },
             {
                 "title": "Homemade Chicken Fried Rice",
-                "description": "Made too much fried rice for dinner! It's loaded with veggies and chicken. Perfect for a quick meal, just needs reheating.",
+                "description": "Made too much fried rice for dinner! It's loaded with"
+                " veggies and chicken. Perfect for a quick meal, just needs reheating.",
                 "sale_price": 6.50,
                 "cuisine_type": "Chinese",
                 "meal_type": "Dinner",
@@ -219,12 +226,14 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "3 servings",
                 "allergen_info": {"contains": ["eggs", "soy"], "may_contain": []},
-                "ingredients": "Rice, Chicken, Eggs, Mixed vegetables, Soy sauce, Green onions, Garlic",
+                "ingredients": "Rice, Chicken, Eggs, Mixed vegetables, Soy sauce,"
+                " Green onions, Garlic",
                 "nutrition_info": "Calories: 400, Protein: 22g, Carbs: 45g, Fat: 15g",
                 "photos": [
                     "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800"
                 ],
-                "pickup_instructions": "I'm in building 2, can meet you in the lobby anytime tonight",
+                "pickup_instructions": "I'm in building 2, can meet you in the lobby"
+                " anytime tonight",
                 "preparation_date": now,
                 "expires_date": expires_short,
                 "created_at": now,
@@ -232,7 +241,8 @@ async def seed():
             },
             {
                 "title": "Extra Enchiladas",
-                "description": "Made a big batch of chicken enchiladas with homemade sauce! Have plenty left and they're super tasty. Can reheat easily.",
+                "description": "Made a big batch of chicken enchiladas with homemade sauce!"
+                " Have plenty left and they're super tasty. Can reheat easily.",
                 "sale_price": 7.00,
                 "cuisine_type": "Mexican",
                 "meal_type": "Dinner",
@@ -242,12 +252,14 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "2 servings",
                 "allergen_info": {"contains": ["dairy"], "may_contain": ["gluten"]},
-                "ingredients": "Corn tortillas, Shredded chicken, Enchilada sauce, Cheese, Onions, Garlic, Mexican spices",
+                "ingredients": "Corn tortillas, Shredded chicken, Enchilada sauce, Cheese, Onions,"
+                " Garlic, Mexican spices",
                 "nutrition_info": "Calories: 420, Protein: 28g, Carbs: 35g, Fat: 22g",
                 "photos": [
                     "https://images.unsplash.com/photo-1534352956036-cd81e27dd615?w=800"
                 ],
-                "pickup_instructions": "I'm around all evening, just message when you want to pick up!",
+                "pickup_instructions": "I'm around all evening,"
+                " just message when you want to pick up!",
                 "preparation_date": now,
                 "expires_date": expires_short,
                 "created_at": now,
@@ -255,7 +267,8 @@ async def seed():
             },
             {
                 "title": "Homemade Mac and Cheese",
-                "description": "Made a huge pan of creamy mac and cheese with a crispy breadcrumb topping! Too much for one person, would love to share or swap.",
+                "description": "Made a huge pan of creamy mac and cheese with a crispy "
+                "breadcrumb topping! Too much for one person, would love to share or swap.",
                 "sale_price": 5.50,
                 "cuisine_type": "American",
                 "meal_type": "Dinner",
@@ -265,7 +278,8 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "3 servings",
                 "allergen_info": {"contains": ["dairy", "gluten"], "may_contain": []},
-                "ingredients": "Macaroni, Cheddar cheese, Mozzarella, Milk, Butter, Breadcrumbs, Seasonings",
+                "ingredients": "Macaroni, Cheddar cheese, Mozzarella, Milk,"
+                " Butter, Breadcrumbs, Seasonings",
                 "nutrition_info": "Calories: 450, Protein: 18g, Carbs: 48g, Fat: 22g",
                 "photos": [
                     "https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=800"
@@ -278,7 +292,8 @@ async def seed():
             },
             {
                 "title": "Extra Butter Chicken & Rice",
-                "description": "Made my mom's butter chicken recipe and have plenty extra! Comes with basmati rice. Super flavorful and easy to reheat.",
+                "description": "Made my mom's butter chicken recipe and have plenty extra!"
+                " Comes with basmati rice. Super flavorful and easy to reheat.",
                 "sale_price": 7.50,
                 "cuisine_type": "Indian",
                 "meal_type": "Dinner",
@@ -288,7 +303,8 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "2 servings",
                 "allergen_info": {"contains": ["dairy"], "may_contain": ["nuts"]},
-                "ingredients": "Chicken, Tomato sauce, Butter, Cream, Basmati rice, Indian spices, Garlic, Ginger",
+                "ingredients": "Chicken, Tomato sauce, Butter, Cream, Basmati rice,"
+                " Indian spices, Garlic, Ginger",
                 "nutrition_info": "Calories: 550, Protein: 32g, Carbs: 45g, Fat: 28g",
                 "photos": [
                     "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800"
@@ -301,7 +317,8 @@ async def seed():
             },
             {
                 "title": "Fresh Baked Chocolate Chip Cookies",
-                "description": "Just baked way too many cookies! They're still warm and soft. Perfect for a study snack or dessert. Would love to swap for other snacks!",
+                "description": "Just baked way too many cookies! They're still warm and soft."
+                " Perfect for a study snack or dessert. Would love to swap for other snacks!",
                 "sale_price": 4.00,
                 "cuisine_type": "American",
                 "meal_type": "Dessert",
@@ -327,7 +344,8 @@ async def seed():
             },
             {
                 "title": "Leftover Pizza Night!",
-                "description": "Made too much homemade pizza! Have extra BBQ chicken and Margherita slices. Still super fresh and can be reheated quickly.",
+                "description": "Made too much homemade pizza! Have extra BBQ chicken and"
+                " Margherita slices. Still super fresh and can be reheated quickly.",
                 "sale_price": 5.00,
                 "cuisine_type": "Italian",
                 "meal_type": "Dinner",
@@ -337,7 +355,8 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "4 large slices",
                 "allergen_info": {"contains": ["gluten", "dairy"], "may_contain": []},
-                "ingredients": "Pizza dough, Mozzarella, Chicken, BBQ sauce, Tomatoes, Basil, Olive oil",
+                "ingredients": "Pizza dough, Mozzarella, Chicken,"
+                " BBQ sauce, Tomatoes, Basil, Olive oil",
                 "nutrition_info": "Calories: 250 per slice, Protein: 12g, Carbs: 30g, Fat: 10g",
                 "photos": [
                     "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800"
@@ -350,7 +369,8 @@ async def seed():
             },
             {
                 "title": "Extra Pasta Bake",
-                "description": "Made a huge pan of baked ziti with sausage and three cheeses! Perfect for reheating, and I've got way too much for just me.",
+                "description": "Made a huge pan of baked ziti with sausage and three cheeses!"
+                " Perfect for reheating, and I've got way too much for just me.",
                 "sale_price": 6.00,
                 "cuisine_type": "Italian",
                 "meal_type": "Dinner",
@@ -360,7 +380,8 @@ async def seed():
                 "available_for_swap": True,
                 "portion_size": "3 servings",
                 "allergen_info": {"contains": ["dairy", "gluten"], "may_contain": []},
-                "ingredients": "Ziti pasta, Italian sausage, Ricotta, Mozzarella, Parmesan, Marinara sauce, Italian herbs",
+                "ingredients": "Ziti pasta, Italian sausage, Ricotta, Mozzarella, Parmesan,"
+                " Marinara sauce, Italian herbs",
                 "nutrition_info": "Calories: 480, Protein: 25g, Carbs: 45g, Fat: 24g",
                 "photos": [
                     "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800"

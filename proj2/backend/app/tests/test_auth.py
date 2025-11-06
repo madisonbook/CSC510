@@ -7,7 +7,6 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 from datetime import datetime
-from bson import ObjectId
 
 TEST_DB_NAME = "test_meal_db"
 

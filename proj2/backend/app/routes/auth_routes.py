@@ -1,19 +1,14 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Header
+from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import HTMLResponse
 from datetime import datetime, timedelta
-from bson import ObjectId
-from typing import Optional
 
 
 from ..models import (
     UserCreate,
-    UserResponse,
     UserLogin,
     UserRole,
     AccountStatus,
-    VerificationToken,
     UserStats,
-    UserPreferences,
     SocialMediaLinks,
     DietaryPreferences,
 )
@@ -106,7 +101,8 @@ async def verify_user(email: str, token: str):
     html = f"""
     <html>
       <head><title>Email Verified</title></head>
-      <body style="font-family:system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial; padding:2rem;">
+      <body style="font-family:system-ui, -apple-system,
+        'Segoe UI', Roboto, Helvetica, Arial; padding:2rem;">
         <h2>Email verified successfully!</h2>
         <p>Your email <strong>{email}</strong> has been verified. You can now log in.</p>
       </body>
