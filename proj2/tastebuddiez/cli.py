@@ -65,7 +65,7 @@ def start(build, detach):
             cmd.append('-d')
         
         # Only start main services (not test services)
-        cmd.extend(['mongodb', 'backend', 'frontend'])
+        cmd.extend(['mongodb', 'fastapi-backend', 'react-frontend'])
         
         click.secho("Starting TasteBuddiez...")
         click.secho(f"Project root: {project_root}")
