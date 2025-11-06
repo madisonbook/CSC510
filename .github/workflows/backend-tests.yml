@@ -45,6 +45,20 @@ jobs:
         run: |
           tastebuddiez test all
         continue-on-error: true
+
+      - name: Copy coverage files from container
+        if: always()
+        run: |
+          # Find the test container (might still be running or stopped)
+          CONTAINER_ID=$(docker ps -aqf "name=test_all")
+          if [ -n "$CONTAINER_ID" ]; then
+            echo "Found container: $CONTAINER_ID"
+            docker cp $CONTAINER_ID:/app/coverage.xml ./coverage.xml || echo "Could not copy coverage.xml"
+            docker cp $CONTAINER_ID:/app/htmlcov ./htmlcov || echo "Could not copy htmlcov"
+            ls -la
+          else
+            echo "No test container found"
+          fi
         
       - name: Upload coverage to Codecov
         if: always()
