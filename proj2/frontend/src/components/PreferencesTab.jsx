@@ -11,9 +11,9 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 
 const AVAILABLE_CUISINES = [
-  '🍕 Italian', '🍜 Asian', 'Latino', '🌮 Mexican', '🍔 American', '🥗 Mediterranean',
-  '🍛 Indian', '🍱 Japanese', 'Chinese', 'Korean', '🥘 Thai', 'Vietnamese', 
-  '🧆 Middle Eastern', '🥖 French'
+  'Italian', 'Asian', 'Latino', 'Mexican', 'American', 'Mediterranean',
+  'Indian', 'Japanese', 'Chinese', 'Korean', 'Thai', 'Vietnamese', 
+  'Middle Eastern', 'French', 'German'
 ];
 
 const COMMON_ALLERGENS = [

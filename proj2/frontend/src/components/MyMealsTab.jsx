@@ -22,9 +22,9 @@ const COMMON_ALLERGENS = [
 ];
 
 const AVAILABLE_CUISINES = [
-  '🍕 Italian', '🍜 Asian', 'Latino', '🌮 Mexican', '🍔 American', '🥗 Mediterranean',
-  '🍛 Indian', '🍱 Japanese', 'Chinese', 'Korean', '🥘 Thai', 'Vietnamese', 
-  '🧆 Middle Eastern', '🥖 French'
+  'Italian', 'Asian', 'Latino', 'Mexican', 'American', 'Mediterranean',
+  'Indian', 'Japanese', 'Chinese', 'Korean', 'Thai', 'Vietnamese', 
+  'Middle Eastern', 'French', 'German'
 ];
 
 export default function MyMealsTab({ userLocation, onMealsUpdate }) {

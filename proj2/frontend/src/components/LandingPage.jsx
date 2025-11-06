@@ -594,42 +594,6 @@ function LandingPage({ onAuthSuccess }) {
         </div>
         </div>
 
-        {/* Partners & Collaborators Section */}
-        <div className="mt-20 mb-32 px-4 text-center max-w-7xl mx-auto">
-          <h2 className="text-primary text-3xl sm:text-4xl md:text-5xl font-serif font-semibold tracking-tight mb-8">
-            Our Partners & Collaborators
-          </h2>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-12 font-sans leading-relaxed">
-            We collaborate with trusted organizations to bring you the best homemade meals.
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-8 md:gap-10">
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Madison Book</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Alice Guth</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Cynthia Espinoza-Arredondo</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Griffin Pitts</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Local Community Centers</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Local Neighborhoods</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Community Kitchens</p>
-            </div>
-            <div className="p-4 rounded-lg bg-white/60 backdrop-blur-sm border border-primary/10 hover:bg-white/95 transition-all duration-300">
-              <p className="text-sm sm:text-base font-sans text-muted-foreground">Neighborhood Associations</p>
-            </div>
-          </div>
-        </div>
 
         {/* Support / Contact */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
