@@ -1,15 +1,21 @@
 name: Run Tests
-
 on:
   push:
-    branches: [ main, development, griffin-branch-11/6 ]
+    branches: [main, development]
   pull_request:
-    branches: [ main, development ]
+    branches: [main, development]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: proj2/backend
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -34,145 +40,88 @@ jobs:
       run: |
         docker compose -f proj2/docker-compose.yml --profile test up test-main --abort-on-container-exit --exit-code-from test-main
         
-    - name: Run All Tests with Coverage
-      run: |
-        docker compose -f proj2/docker-compose.yml --profile test up test-all --abort-on-container-exit --exit-code-from test-all
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Extract coverage reports
-      if: always()
-      run: |
-        # Copy coverage reports from container
-        docker cp test_all:/app/htmlcov ./htmlcov || true
-        docker cp test_all:/app/coverage.xml ./coverage.xml || true
-    
-    - name: Upload coverage to Codecov
-      if: always()
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-        token: ${{ secrets.CODECOV_TOKEN }}
-    
-    - name: Upload coverage HTML report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report
-        path: htmlcov/
-        retention-days: 30
-    
-    - name: Comment PR with coverage
-      if: github.event_name == 'pull_request' && always()
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
           
-          // Read coverage report
-          let coverageComment = '## 📊 Test Coverage Report\n\n';
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          ln -s ../tastebuddiez tastebuddiez
+          pip install .
+          pip install pytest pytest-cov codecov
           
-          try {
-            if (fs.existsSync('coverage.xml')) {
-              const xml = fs.readFileSync('coverage.xml', 'utf8');
-              
-              // Extract coverage percentage
-              const match = xml.match(/line-rate="([0-9.]+)"/);
-              if (match) {
-                const coverage = (parseFloat(match[1]) * 100).toFixed(1);
-                coverageComment += `**Coverage:** ${coverage}%\n\n`;
-                
-                // Add status based on thresholds
-                if (coverage >= 80) {
-                  coverageComment += '✅ **Status:** Excellent coverage (≥80%)\n';
-                } else if (coverage >= 70) {
-                  coverageComment += '⚠️ **Status:** Good coverage (≥70%), aim for 80%\n';
-                } else {
-                  coverageComment += '❌ **Status:** Coverage below 70%, needs improvement\n';
-                }
-              } else {
-                coverageComment += '⚠️ Could not parse coverage percentage\n';
-              }
-            } else {
-              coverageComment += '⚠️ Coverage report not found\n';
-            }
-          } catch (error) {
-            coverageComment += `⚠️ Error reading coverage: ${error.message}\n`;
-          }
+      - name: Create coverage folder
+        run: mkdir -p ./coverage_reports
+
+      - name: Run tests with coverage
+        run: |
+          tastebuddiez setup
+          tastebuddiez test all --coverage --keep
           
-          coverageComment += '\n📁 Download detailed HTML report from the artifacts section above.\n';
+          CONTAINER_ID=$(docker ps -alqf "name=test_all")
+          echo "Found container: $CONTAINER_ID"
           
-          // Post comment
-          try {
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: coverageComment
-            });
-          } catch (error) {
-            console.log('Could not post comment:', error);
-          }
-    
-    - name: Add coverage to summary
-      if: always()
-      run: |
-        echo "## 📊 Test Coverage" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -f coverage.xml ]; then
-          # Extract coverage using Python (more reliable)
-          COVERAGE=$(python3 -c "
-          import xml.etree.ElementTree as ET
-          try:
-              tree = ET.parse('coverage.xml')
-              root = tree.getroot()
-              coverage = float(root.attrib.get('line-rate', 0)) * 100
-              print(f'{coverage:.1f}')
-          except Exception as e:
-              print('N/A')
-          " 2>/dev/null || echo "N/A")
-          
-          echo "**Overall Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Add status emoji
-          if [ "$COVERAGE" != "N/A" ]; then
-            COVERAGE_NUM=$(echo $COVERAGE | cut -d'%' -f1)
-            if (( $(echo "$COVERAGE_NUM >= 80" | bc -l) )); then
-              echo "✅ Excellent coverage!" >> $GITHUB_STEP_SUMMARY
-            elif (( $(echo "$COVERAGE_NUM >= 70" | bc -l) )); then
-              echo "⚠️ Good coverage, aim for 80%" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "❌ Coverage needs improvement" >> $GITHUB_STEP_SUMMARY
-            fi
+          if [ -n "$CONTAINER_ID" ]; then
+            docker cp $CONTAINER_ID:/app/coverage.xml ./coverage.xml || echo "Could not copy coverage.xml"
+            docker cp $CONTAINER_ID:/app/htmlcov ./htmlcov || echo "Could not copy htmlcov"
+          else
+            echo "No test container found"
           fi
-        else
-          echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
-        fi
+        env:
+          COVERAGE_XML: /app/coverage_reports/coverage.xml
+          COVERAGE_HTML: /app/coverage_reports/htmlcov
+          
         
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📁 Download detailed report from artifacts" >> $GITHUB_STEP_SUMMARY
-    
-    - name: Cleanup
-      if: always()
-      run: |
-        docker compose -f proj2/docker-compose.yml --profile test down -v
-        docker system prune -f
-
-  test-summary:
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./proj2/backend/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+          
+      - name: Upload HTML coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: proj2/backend/htmlcov/
+          retention-days: 30
+            
+      - name: Add coverage summary to workflow summary
+        if: always()
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage.xml ]; then
+            COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); cov = float(tree.getroot().attrib.get('line-rate', 0)) * 100; print(f'{cov:.1f}')" 2>/dev/null || echo "N/A")
+            echo "**Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+  summary:
     runs-on: ubuntu-latest
     needs: test
     if: always()
-    
     steps:
-    - name: Test Results Summary
-      run: |
-        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        if [ "${{ needs.test.result }}" == "success" ]; then
-          echo "✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ Some tests failed. Please check the logs above." >> $GITHUB_STEP_SUMMARY
-        fi
+      - name: Summarize test results
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some tests failed. Check logs above." >> $GITHUB_STEP_SUMMARY
+          fi

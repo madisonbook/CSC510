@@ -3,33 +3,14 @@ from fastapi.staticfiles import StaticFiles
 import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import asyncio
-from datetime import datetime
-from .database import connect_to_mongo, close_mongo_connection, get_database
-from .routes.auth_routes import router as auth_router
-from .routes.user_routes import router as user_router
-from .routes.meal_routes import router as meal_router
+from app.database import connect_to_mongo, close_mongo_connection, get_database
+from app.routes.auth_routes import router as auth_router
+from app.routes.user_routes import router as user_router
+from app.routes.meal_routes import router as meal_router
 from pymongo import ASCENDING
-from . import seed_data
-
-
-async def wait_for_mongo(retries: int = 60, delay: float = 1.0):
-    db = get_database()
-    for _ in range(retries):
-        try:
-            await db.command("ping")
-            return
-        except Exception:
-            await asyncio.sleep(delay)
-    raise RuntimeError("MongoDB not ready after waiting")
-
-
-async def run_seed_once():
-    db = get_database()
-    if await db["_meta"].find_one({"key": "seed_done"}):
-        return
-    await seed_data.seed()
-    await db["_meta"].insert_one({"key": "seed_done", "at": datetime.utcnow()})
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+import os
 
 
 @asynccontextmanager
@@ -48,10 +29,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Serve uploaded files (images) from the app/static/uploads folder
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-os.makedirs(os.path.join(static_dir, "uploads"), exist_ok=True)
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
+frontend_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+)
+
+if os.path.exists(os.path.join(frontend_path, "index.html")):
+    app.mount(
+        "/static",
+        StaticFiles(directory=os.path.join(frontend_path, "assets")),
+        name="static",
+    )
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+else:
+
+    @app.get("/")
+    async def root_fallback():
+        return JSONResponse(
+            {"message": "Welcome to Taste Buddiez API (frontend not built)"}
+        )
+
+
+@app.get("/")
+async def root():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
 
 
 @app.on_event("startup")
@@ -110,14 +110,21 @@ app.include_router(user_router)
 app.include_router(meal_router)
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Welcome to Taste Buddiez API",
-        "tagline": "Connecting neighbors through homemade meals",
-    }
+# @app.get("/")
+# async def root():
+#    return {
+#        "message": "Welcome to Taste Buddiez API",
+#        "tagline": "Connecting neighbors through homemade meals",
+#    }
 
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+def run():
+    """Entry point for running the app as an installed package."""
+    import uvicorn
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=5173, reload=True)

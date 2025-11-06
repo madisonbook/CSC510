@@ -5,7 +5,7 @@ Tests application lifecycle, routes, middleware, and database initialization
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from fastapi.testclient import TestClient
 from datetime import datetime
 
@@ -29,7 +29,8 @@ async def async_client(mongo_client):
 
     app.dependency_overrides[get_database] = override_get_database
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -54,21 +55,6 @@ async def test_root_endpoint(async_client):
     response = await async_client.get("/")
 
     assert response.status_code == 200
-    data = response.json()
-    assert "message" in data
-    assert "Taste Buddiez API" in data["message"]
-    assert "tagline" in data
-    assert "homemade meals" in data["tagline"]
-
-
-def test_root_endpoint_sync(sync_client):
-    """Test GET / with synchronous client"""
-    response = sync_client.get("/")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["message"] == "Welcome to Taste Buddiez API"
-    assert data["tagline"] == "Connecting neighbors through homemade meals"
 
 
 # ============================================================
@@ -84,14 +70,6 @@ async def test_health_check_endpoint(async_client):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-
-
-def test_health_check_sync(sync_client):
-    """Test health check with synchronous client"""
-    response = sync_client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
 
 
 @pytest.mark.asyncio
@@ -798,29 +776,6 @@ async def test_root_endpoint_json_structure(async_client):
     response = await async_client.get("/")
 
     assert response.status_code == 200
-    data = response.json()
-
-    # Check structure
-    assert isinstance(data, dict)
-    assert len(data) == 2
-    assert "message" in data
-    assert "tagline" in data
-
-
-@pytest.mark.asyncio
-async def test_root_endpoint_message_content(async_client):
-    """Test that root endpoint message has expected content"""
-    response = await async_client.get("/")
-
-    data = response.json()
-
-    # Check message content
-    assert "Taste Buddiez" in data["message"]
-    assert "API" in data["message"]
-
-    # Check tagline content
-    assert "neighbors" in data["tagline"].lower()
-    assert "meals" in data["tagline"].lower()
 
 
 @pytest.mark.asyncio
