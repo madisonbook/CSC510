@@ -43,6 +43,7 @@ jobs:
           
       - name: Run tests
         run: |
+          tastebuddiez setup
           tastebuddiez test all --coverage
         continue-on-error: true
         
