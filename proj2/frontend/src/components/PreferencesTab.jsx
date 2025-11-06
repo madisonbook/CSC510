@@ -58,7 +58,7 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid sm:grid-cols-1 gap-4 sm:gap-6">
         {/* Cuisine Preferences */}
         <Card>
           <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
@@ -86,8 +86,10 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
             </div>
           </CardContent>
         </Card>
+        </div>
 
-        {/* Allergens */}
+        {/* Allergens & Dietary*/}
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
             <CardTitle className="text-lg sm:text-xl">Allergens</CardTitle>
