@@ -12,9 +12,6 @@
 3. [User Endpoints](#user-endpoints)
 4. [Meal Endpoints](#meal-endpoints)
 5. [System Endpoints](#system-endpoints)
-6. [Data Models](#data-models)
-7. [Client Examples](#client-examples)
-8. [Error Responses](#error-responses)
 
 ---
 
@@ -103,35 +100,6 @@ Creates a new user account and sends verification email.
 
 ---
 
-### Verify Email
-
-Verifies user email address using token from verification email.
-
-**Endpoint:** `GET /api/auth/verify`
-
-**Query Parameters:**
-- `email` (string, required) - User's email address
-- `token` (string, required) - Verification token from email
-
-**Example Request:**
-```bash
-curl "http://localhost:8000/api/auth/verify?email=user@example.com&token=abc123xyz"
-```
-
-**Response:** `200 OK`
-```json
-{
-  "message": "Email verified successfully!",
-  "verified": true
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Invalid or expired token
-- `404 Not Found` - Account not found
-
----
-
 ### Login
 
 Authenticates user and returns user information.
@@ -160,34 +128,6 @@ Authenticates user and returns user information.
 **Error Responses:**
 - `401 Unauthorized` - Incorrect email or password
 - `403 Forbidden` - Email not verified
-
----
-
-### Resend Verification Email
-
-Sends a new verification email to the user.
-
-**Endpoint:** `POST /api/auth/resend-verification`
-
-**Query Parameters:**
-- `email` (string, required) - User's email address
-- `account_type` (string, optional) - Default: "user"
-
-**Example Request:**
-```bash
-curl -X POST "http://localhost:8000/api/auth/resend-verification?email=user@example.com"
-```
-
-**Response:** `200 OK`
-```json
-{
-  "message": "Verification email sent successfully"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Account already verified
-- `404 Not Found` - Account not found
 
 ---
 
@@ -449,20 +389,16 @@ Creates a new meal listing.
   "description": "Traditional Italian lasagna with homemade pasta, beef ragu, and bechamel sauce. Made with fresh ingredients and family recipe.",
   "cuisine_type": "Italian",
   "meal_type": "dinner",
+  "ingredients": "pasta, beef, tomato sauce, cheese, bechamel, herbs",
   "photos": [
-    "https://example.com/lasagna1.jpg",
-    "https://example.com/lasagna2.jpg"
+    "/static/uploads/abc123_lasagna1.jpg",
+    "/static/uploads/def456_lasagna2.jpg"
   ],
   "allergen_info": {
     "contains": ["dairy", "eggs", "gluten"],
     "may_contain": ["nuts"]
   },
-  "nutrition_info": {
-    "calories": 450,
-    "protein_grams": 25.5,
-    "carbs_grams": 40.0,
-    "fat_grams": 18.5
-  },
+  "nutrition_info": "450 calories, 25g protein, 40g carbs, 18g fat",
   "portion_size": "Serves 4",
   "available_for_sale": true,
   "sale_price": 25.00,
@@ -544,7 +480,73 @@ Creates a new meal listing.
 - `401 Unauthorized` - Not authenticated
 
 ---
+### Upload Meal Photos
 
+Uploads one or more photos for a meal listing.
+
+**Endpoint:** `POST /api/meals/upload`
+
+**Authentication:** Optional
+
+**Content-Type:** `multipart/form-data`
+
+**Request Body:**
+- `files` (array of files, required) - One or more image files to upload
+
+**Example Request:**
+```bash
+curl -X POST "http://localhost:8000/api/meals/upload" \
+  -H "Authorization: Bearer user@example.com" \
+  -F "files=@photo1.jpg" \
+  -F "files=@photo2.jpg"
+```
+
+**Response:** `200 OK`
+```json
+[
+  "/static/uploads/abc123def456_photo1.jpg",
+  "/static/uploads/789xyz012_photo2.jpg"
+]
+```
+
+**Response Description:**
+- Returns array of URL paths that can be stored in meal `photos` field
+- Each filename is prefixed with a UUID for uniqueness
+- Files are accessible via the `/static/uploads/` path
+
+**Error Responses:**
+- `500 Internal Server Error` - Failed to save uploaded file
+
+---
+
+### Get Recommended Meals
+
+Returns meals that match the authenticated user's dietary preferences.
+
+**Endpoint:** `GET /api/meals/my/recommendations`
+
+**Authentication:** Required
+
+**Query Parameters:**
+- `skip` (integer, optional) - Number of records to skip (default: 0)
+- `limit` (integer, optional) - Maximum records to return (default: 20)
+
+**Example Request:**
+```bash
+curl -H "Authorization: Bearer user@example.com" \
+  "http://localhost:8000/api/meals/my/recommendations?limit=10"
+```
+
+**Response:** `200 OK` - Array of MealResponse objects
+
+**Filtering Logic:**
+- Excludes meals created by the user
+- Filters out meals containing user's allergens
+- Excludes meals with ingredients user wants to avoid
+- Applies user's dietary restrictions (vegetarian, vegan, etc.)
+- Prioritizes meals from user's preferred cuisines
+
+---
 ### Get All Meals
 
 Returns a paginated list of available meals with optional filters.
@@ -561,6 +563,10 @@ Returns a paginated list of available meals with optional filters.
 | `available_for_swap` | boolean | No | Filter by swap availability |
 | `skip` | integer | No | Number of records to skip (default: 0) |
 | `limit` | integer | No | Maximum records to return (default: 20) |
+| `dietary_restriction` | string | No | Filter by: vegetarian, vegan, pescatarian, gluten-free, dairy-free, nut-free, keto, paleo |
+| `exclude_allergens` | string | No | Comma-separated list of allergens to exclude |
+| `exclude_ingredients` | string | No | Comma-separated list of ingredients to exclude |
+| `min_rating` | float | No | Minimum average rating filter |
 
 **Example Requests:**
 ```bash
@@ -578,6 +584,18 @@ curl "http://localhost:8000/api/meals/?skip=20&limit=20"
 
 # Combined filters
 curl "http://localhost:8000/api/meals/?cuisine_type=Italian&max_price=30&limit=10"
+
+# Filter by dietary restriction
+curl "http://localhost:8000/api/meals/?dietary_restriction=vegan"
+
+# Exclude specific allergens
+curl "http://localhost:8000/api/meals/?exclude_allergens=dairy,nuts"
+
+# Exclude specific ingredients
+curl "http://localhost:8000/api/meals/?exclude_ingredients=chicken,beef"
+
+# Combine multiple filters
+curl "http://localhost:8000/api/meals/?dietary_restriction=vegetarian&exclude_allergens=dairy&min_rating=4.0"
 ```
 
 **Response:** `200 OK`
@@ -601,6 +619,18 @@ curl "http://localhost:8000/api/meals/?cuisine_type=Italian&max_price=30&limit=1
   }
 ]
 ```
+**Dietary Restriction Filtering:**
+
+Each restriction automatically excludes specific ingredients and allergens:
+
+- **vegetarian**: Excludes meat, poultry, fish, seafood
+- **vegan**: Excludes all animal products (meat, dairy, eggs, honey)
+- **pescatarian**: Excludes meat and poultry (allows fish)
+- **gluten-free**: Excludes wheat, flour, bread, pasta, barley, rye
+- **dairy-free**: Excludes cheese, butter, cream, milk, yogurt
+- **nut-free**: Excludes all nuts and peanuts
+- **keto**: Excludes bread, pasta, rice, potatoes, sugar, flour
+- **paleo**: Excludes grains, legumes, dairy, processed foods
 
 ---
 

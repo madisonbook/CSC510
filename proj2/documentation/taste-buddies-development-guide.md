@@ -482,7 +482,6 @@ curl -X DELETE "http://localhost:8000/api/meals/507f1f77bcf86cd799439011" \
 ```
 
 ### Meal Data Model
-
 ```python
 {
   "_id": ObjectId,                    # MongoDB document ID
@@ -491,23 +490,19 @@ curl -X DELETE "http://localhost:8000/api/meals/507f1f77bcf86cd799439011" \
   "description": str,                 # Meal description (10-1000 chars)
   "cuisine_type": str,                # e.g., "Italian", "Mexican", "Asian"
   "meal_type": str,                   # e.g., "breakfast", "lunch", "dinner"
-  "photos": [str],                    # Array of photo URLs
+  "ingredients": str,                 # ⚠️ CHANGED: Comma-separated string
+  "photos": [str],                    # Array of photo URLs from /api/meals/upload
   "allergen_info": {
     "contains": [str],                # Definite allergens
     "may_contain": [str]              # Possible cross-contamination
   },
-  "nutrition_info": {                 # Optional nutrition data
-    "calories": int | None,
-    "protein_grams": float | None,
-    "carbs_grams": float | None,
-    "fat_grams": float | None
-  },
+  "nutrition_info": str | None,       # ⚠️ CHANGED: Optional string format
   "portion_size": str,                # e.g., "Serves 4", "1 portion"
   "available_for_sale": bool,         # Can be purchased
   "sale_price": float | None,         # Price in USD
   "available_for_swap": bool,         # Can be swapped
   "swap_preferences": [str],          # Desired swap items
-  "status": str,                      # "available" | "pending" | "sold" | "swapped" | "unavailable"
+  "status": str,                      # "available" | "pending" | "sold" | "swapped"
   "preparation_date": datetime,       # When meal was prepared
   "expires_date": datetime,           # When meal expires
   "pickup_instructions": str | None,  # Pickup details
@@ -516,19 +511,6 @@ curl -X DELETE "http://localhost:8000/api/meals/507f1f77bcf86cd799439011" \
   "views": int,                       # View count
   "created_at": datetime,             # Creation timestamp
   "updated_at": datetime              # Last update timestamp
-}
-```
-
-### Verification Token Data Model
-
-```python
-{
-  "_id": ObjectId,
-  "email": str,                       # Email to verify
-  "token": str,                       # Random verification token
-  "token_type": str,                  # "email_verification" | "password_reset"
-  "expires_at": datetime,             # Token expiration (24 hours)
-  "created_at": datetime
 }
 ```
 
@@ -746,78 +728,313 @@ For meal photos:
 
 ## Testing Guide
 
-### Running Tests
+### Test Configuration
 
+Tests use a completely isolated MongoDB instance to prevent data conflicts:
+
+**Test Environment:**
+- **MongoDB URL:** `mongodb://localhost:27018` (or `mongodb://test-mongo:27017` in Docker)
+- **Database Name:** `test_meal_db`
+- **Port:** 27018 (separate from main app on 27017)
+- **Network:** `test-network` (isolated from main app)
+
+**Configuration Files:**
+- `pytest.ini` - Pytest configuration
+- `.coveragerc` - Coverage settings
+- `conftest.py` - Shared test fixtures
+
+### Running Tests with Docker (Recommended)
 ```bash
-# Run all tests
-docker-compose up backend-tests
+# Run all tests with full coverage report
+docker-compose --profile test up test-all --build
 
-# Run specific test file
-docker-compose run backend-tests pytest tests/test_auth.py
+# Run specific test suites
+docker-compose --profile test up test-auth --build    # Auth tests
+docker-compose --profile test up test-meals --build   # Meal tests
+docker-compose --profile test up test-users --build   # User tests
+docker-compose --profile test up test-main --build    # Main app tests
 
-# Run with coverage
-docker-compose run backend-tests pytest --cov=app tests/
+# View test logs
+docker-compose --profile test logs test-all
 
-# Run with verbose output
-docker-compose run backend-tests pytest -v -s
+# Clean test environment
+docker-compose --profile test down -v
+```
+
+### Running Tests Locally
+```bash
+# 1. Install test dependencies
+pip install pytest pytest-asyncio httpx pytest-cov motor pymongo
+
+# 2. Start test MongoDB on port 27018
+docker run -d -p 27018:27017 --name test-mongodb mongo:7.0
+
+# 3. Set environment variables
+export TEST_MONGO_URL=mongodb://localhost:27018
+export TEST_DB_NAME=test_meal_db
+export PYTHONPATH=/path/to/backend
+
+# 4. Run all tests
+pytest app/tests/ -v
+
+# 5. Run with coverage report
+pytest app/tests/ --cov=app --cov-report=html --cov-report=term-missing
+
+# 6. Run specific test file
+pytest app/tests/test_meals.py -v
+
+# 7. Run with verbose output
+pytest app/tests/ -v --tb=short --color=yes
+
+# 8. Run and stop on first failure
+pytest app/tests/ -x
 ```
 
 ### Test Structure
-
 ```
-tests/
+app/tests/
 ├── __init__.py
 ├── conftest.py           # Shared fixtures
 ├── test_auth.py          # Authentication tests
 ├── test_users.py         # User endpoint tests
 ├── test_meals.py         # Meal endpoint tests
-└── test_database.py      # Database operation tests
 ```
+
+### Test Fixtures (conftest.py)
+
+The test configuration provides several fixtures for writing tests:
+
+**`mongo_client`** (function scope)
+- Creates a fresh MongoDB client for each test
+- Automatically closes connection after test
+- Ensures correct event loop usage
+
+**`test_client`** (synchronous)
+- Standard FastAPI TestClient
+- Use for simple synchronous tests
+- Example: `response = test_client.get("/health")`
+
+**`async_client`** (asynchronous)
+- Async HTTP client with mocked database
+- Use for async endpoint tests
+- Example: `response = await async_client.get("/api/meals/")`
+
+**`authenticated_client`** (asynchronous)
+- Pre-authenticated async client
+- Automatically includes user authentication
+- Use for protected endpoints
+- Example: `response = await authenticated_client.post("/api/meals/", json=meal_data)`
+
+**`clean_test_database`** (auto-use fixture)
+- Runs automatically before and after EVERY test
+- Cleans all collections: meals, users, reviews, verification_tokens
+- Ensures complete test isolation
+- No configuration needed - it just works
 
 ### Writing Tests
 
-Example test file:
-
+**Example: Basic Async Test**
 ```python
 import pytest
 from httpx import AsyncClient
-from app.main import app
 
 @pytest.mark.asyncio
-async def test_register_user():
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        response = await client.post("/api/auth/register/user", json={
-            "email": "test@example.com",
-            "password": "TestPass123",
-            "full_name": "Test User",
-            "location": {
-                "address": "123 Test St",
-                "city": "Raleigh",
-                "state": "NC",
-                "zip_code": "27601"
-            }
-        })
-        assert response.status_code == 201
-        data = response.json()
-        assert data["email"] == "test@example.com"
-
-@pytest.mark.asyncio
-async def test_login_user():
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        # First register
-        await client.post("/api/auth/register/user", json={...})
-        
-        # Then login
-        response = await client.post("/api/auth/login", json={
-            "email": "test@example.com",
-            "password": "TestPass123"
-        })
-        assert response.status_code == 200
-        assert "user_id" in response.json()
+async def test_create_meal(authenticated_client):
+    """Test creating a new meal"""
+    meal_data = {
+        "title": "Test Lasagna",
+        "description": "Delicious homemade lasagna",
+        "cuisine_type": "Italian",
+        "meal_type": "dinner",
+        "ingredients": "pasta, beef, tomato sauce, cheese",
+        "allergen_info": {
+            "contains": ["dairy", "gluten"],
+            "may_contain": []
+        },
+        "nutrition_info": "450 calories, 25g protein",
+        "portion_size": "Serves 4",
+        "available_for_sale": True,
+        "sale_price": 25.00,
+        "available_for_swap": False,
+        "swap_preferences": [],
+        "preparation_date": "2024-10-22T18:00:00",
+        "expires_date": "2024-10-23T20:00:00"
+    }
+    
+    response = await authenticated_client.post("/api/meals/", json=meal_data)
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["title"] == "Test Lasagna"
+    assert data["cuisine_type"] == "Italian"
+    assert "id" in data
 ```
 
----
+**Example: Test with Database Verification**
+```python
+@pytest.mark.asyncio
+async def test_meal_persists_in_database(authenticated_client, mongo_client):
+    """Test that created meal is actually saved to database"""
+    # Create meal via API
+    response = await authenticated_client.post("/api/meals/", json=meal_data)
+    meal_id = response.json()["id"]
+    
+    # Verify in database
+    db = mongo_client["test_meal_db"]
+    meal = await db.meals.find_one({"_id": ObjectId(meal_id)})
+    
+    assert meal is not None
+    assert meal["title"] == "Test Lasagna"
+```
 
+**Example: Test Error Handling**
+```python
+@pytest.mark.asyncio
+async def test_create_meal_missing_required_field(authenticated_client):
+    """Test that missing required fields return 422"""
+    incomplete_data = {
+        "title": "Test Meal"
+        # Missing required fields
+    }
+    
+    response = await authenticated_client.post("/api/meals/", json=incomplete_data)
+    
+    assert response.status_code == 422
+    assert "detail" in response.json()
+```
+
+### Test Database Cleanup
+
+The `clean_test_database` fixture (in conftest.py) automatically:
+
+1. **Before Each Test:**
+   - Deletes all documents from `meals` collection
+   - Deletes all documents from `users` collection
+   - Deletes all documents from `reviews` collection
+   - Deletes all documents from `verification_tokens` collection
+
+2. **After Each Test:**
+   - Repeats the same cleanup process
+   - Ensures no test data leaks to next test
+
+**You don't need to do anything** - this happens automatically for every test.
+
+### Pytest Configuration (pytest.ini)
+```ini
+[pytest]
+# Async test support - use 'auto' mode
+asyncio_mode = auto
+
+# Test discovery patterns
+python_files = test_*.py
+python_classes = Test*
+python_functions = test_*
+
+# Output options
+addopts = 
+    -v                    # Verbose output
+    --strict-markers      # Enforce marker registration
+    --tb=short            # Short traceback format
+
+# Markers
+markers =
+    asyncio: marks tests as async tests
+    integration: marks tests as integration tests
+    slow: marks tests as slow running
+
+# Test paths
+testpaths = app/tests
+
+# Minimum Python version
+minversion = 3.8
+```
+
+### Coverage Configuration (.coveragerc)
+```ini
+[run]
+source = app
+omit = 
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */venv/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+
+[html]
+directory = htmlcov
+```
+
+### Viewing Coverage Reports
+
+After running tests with coverage:
+```bash
+# Generate HTML report
+pytest app/tests/ --cov=app --cov-report=html
+
+# Open in browser
+open htmlcov/index.html        # macOS
+xdg-open htmlcov/index.html    # Linux
+start htmlcov/index.html       # Windows
+
+# View terminal report with missing lines
+pytest app/tests/ --cov=app --cov-report=term-missing
+```
+
+**Coverage Report Shows:**
+- Overall percentage of code covered
+- Per-file coverage breakdown
+- Specific lines not covered by tests
+- Branch coverage information
+
+### Running Specific Tests
+```bash
+# Run single test function
+pytest app/tests/test_meals.py::test_create_meal -v
+
+# Run all tests in a class
+pytest app/tests/test_meals.py::TestMealFilters -v
+
+# Run tests matching pattern
+pytest app/tests/ -k "dietary" -v
+
+# Run tests with specific marker
+pytest app/tests/ -m "integration" -v
+
+# Run and stop on first failure
+pytest app/tests/ -x
+
+# Run failed tests from last run
+pytest app/tests/ --lf
+```
+
+### Test Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TEST_MONGO_URL` | `mongodb://localhost:27018` | Test MongoDB connection |
+| `TEST_DB_NAME` | `test_meal_db` | Test database name |
+| `PYTHONPATH` | `/app` | Python module search path |
+| `PYTHONUNBUFFERED` | `1` | Force unbuffered output for real-time logs |
+
+### Debugging Tests
+```bash
+# Run with print statements visible
+pytest app/tests/ -v -s
+
+# Show local variables on failure
+pytest app/tests/ -v -l
+
+# Enter debugger on failure
+pytest app/tests/ --pdb
+
+# Show 10 slowest tests
+pytest app/tests/ --durations=10
+```
+---
 ## Deployment to Production
 
 ### Production Checklist

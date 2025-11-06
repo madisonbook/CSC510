@@ -10,8 +10,9 @@
 2. [Step-by-Step Deployment](#step-by-step-deployment)
 3. [Stopping the Application](#stopping-the-application)
 4. [Running Tests](#running-tests)
-5. [Docker Commands Reference](#docker-commands-reference)
-6. [Local Development Setup](#local-development-setup)
+5. [Test Services Architecture](#test-services-architecture)
+6. [Docker Commands Reference](#docker-commands-reference)
+7. [Local Development Setup](#local-development-setup)
 
 ---
 
@@ -160,23 +161,18 @@ docker-compose down -v
 
 ### Backend Tests
 
+### Run All Tests with Coverage
 ```bash
-# Run the complete test suite
-docker-compose up --build backend-tests
+# Build and run complete test suite
+docker-compose --profile test up test-all --build
 ```
 
-### Run Specific Test File
-
-```bash
-# Run authentication tests only
-docker-compose run backend-tests pytest tests/test_auth.py
-
-# Run with verbose output
-docker-compose run backend-tests pytest tests/test_auth.py -v
-
-# Run with coverage report
-docker-compose run backend-tests pytest --cov=app tests/
-```
+**What happens:**
+- Test MongoDB starts on port 27018 (separate from main DB)
+- All test files execute (auth, users, meals, main)
+- Code coverage report generated
+- HTML coverage report saved to `backend/htmlcov/index.html`
+- XML coverage report saved for CI/CD integration
 
 ### View Test Results
 
@@ -186,6 +182,111 @@ After running tests, you'll see:
 - Execution time
 - Any errors or warnings
 
+### Run Specific Test Suites
+```bash
+# Authentication tests only
+docker-compose --profile test up test-auth --build
+
+# Meal endpoint tests only
+docker-compose --profile test up test-meals --build
+
+# User endpoint tests only
+docker-compose --profile test up test-users --build
+
+# Main application tests only
+docker-compose --profile test up test-main --build
+```
+
+### View Test Logs
+```bash
+# View logs from all tests
+docker-compose --profile test logs test-all
+
+# View logs from specific test
+docker-compose --profile test logs test-meals
+
+# Follow logs in real-time
+docker-compose --profile test logs -f test-all
+```
+
+### Clean Test Environment
+```bash
+# Stop and remove test containers
+docker-compose --profile test down
+
+# Remove test volumes and data (complete cleanup)
+docker-compose --profile test down -v
+```
+
+### View Coverage Report
+
+After running tests with coverage:
+```bash
+# Open HTML coverage report (macOS)
+open backend/htmlcov/index.html
+
+# Open HTML coverage report (Linux)
+xdg-open backend/htmlcov/index.html
+
+# Open HTML coverage report (Windows)
+start backend/htmlcov/index.html
+```
+
+---
+## Test Services Architecture
+
+The application uses Docker Compose profiles to separate test services from main application services.
+
+### Test Profile Services
+
+All test services use the `test` profile and must be explicitly activated with `--profile test`:
+
+| Service | Container Name | Purpose |
+|---------|----------------|---------|
+| `test-mongo` | `test_mongo` | Isolated MongoDB for tests (port 27018) |
+| `test-auth` | `test_auth` | Authentication endpoint tests |
+| `test-users` | `test_users` | User endpoint tests |
+| `test-meals` | `test_meals` | Meal endpoint tests |
+| `test-main` | `test_main` | Main application tests |
+| `test-all` | `test_all` | Complete test suite with coverage |
+
+### Test Service Configuration
+
+Each test service includes:
+
+**Environment Variables:**
+- `TEST_MONGO_URL=mongodb://test-mongo:27017` - Test database connection
+- `TEST_DB_NAME=test_meal_db` - Isolated test database name
+- `PYTHONPATH=/app` - Python import path
+- `PYTHONUNBUFFERED=1` - Real-time log output
+
+**Health Checks:**
+- Test MongoDB has health check to ensure availability
+- Test services wait for MongoDB to be healthy before starting
+
+**Networks:**
+- Test services use separate `test-network`
+- Complete isolation from main application network
+
+**Volumes:**
+- `/app/app` - Mounted for live code changes
+- `/app/htmlcov` - Coverage reports
+- `/app/pytest.ini` - Test configuration
+- `/app/.coveragerc` - Coverage configuration
+
+### Running Main App and Tests Simultaneously
+```bash
+# Terminal 1: Start main application
+docker-compose up
+
+# Terminal 2: Run tests (separate network, no conflicts)
+docker-compose --profile test up test-all --build
+```
+
+Both can run at the same time because:
+- Different MongoDB instances (ports 27017 vs 27018)
+- Separate Docker networks
+- Isolated databases
 ---
 
 ## Docker Commands Reference
@@ -354,6 +455,89 @@ DEBUG=true
 
 **Note:** Never commit `.env` files with sensitive data to version control.
 
+---
+
+## Docker Compose Profiles
+
+### Main Profile (Default)
+
+Starts production/development services:
+```bash
+docker-compose up --build
+```
+
+**Services Started:**
+- `mongodb` - Main database (port 27017)
+- `fastapi-backend` - API server (port 8000)
+- `react-frontend` - Web interface (port 5173)
+
+### Test Profile
+
+Starts isolated test environment:
+```bash
+docker-compose --profile test up test-all --build
+```
+
+**Services Started:**
+- `test-mongo` - Test database (port 27018)
+- `test-auth` - Authentication tests
+- `test-users` - User tests
+- `test-meals` - Meal tests
+- `test-main` - Main app tests
+- `test-all` - Full suite with coverage
+
+### Using Both Profiles
+```bash
+# Start main application in background
+docker-compose up -d
+
+# Run tests (won't interfere with main app)
+docker-compose --profile test up test-all --build
+
+# View main app logs
+docker-compose logs -f backend
+
+# View test logs
+docker-compose --profile test logs test-all
+```
+Update "Verifying Successful Deployment" section - Add:
+markdown### Verify Test Setup
+
+Check test services are configured correctly:
+```bash
+# Check test services status
+docker-compose --profile test ps
+
+# Expected output:
+NAME                COMMAND                  STATUS
+test_mongo          mongod                   Up (healthy)
+test_auth           pytest app/tests/...     Exited (0)
+test_meals          pytest app/tests/...     Exited (0)
+test_users          pytest app/tests/...     Exited (0)
+test_main           pytest app/tests/...     Exited (0)
+```
+
+### Verify Static File Access
+```bash
+# Test that uploaded files are accessible
+curl -I http://localhost:8000/static/uploads/test.jpg
+
+# Expected: 200 OK or 404 Not Found (if file doesn't exist)
+# Should NOT be 403 Forbidden
+```
+
+### Check Test Database
+```bash
+# Access test MongoDB
+docker exec -it test_mongo mongosh
+
+# Inside MongoDB shell:
+show dbs
+use test_meal_db
+show collections
+
+# Should see: meals, users, reviews, verification_tokens
+```
 ---
 
 ## Deployment Architecture
