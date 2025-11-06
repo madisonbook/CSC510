@@ -6,6 +6,8 @@
 
 ![Code Format](https://github.com/madisonbook/CSC510/actions/workflows/format.yml/badge.svg)
 
+[![DOI](https://zenodo.org/badge/1044463210.svg)](https://doi.org/10.5281/zenodo.17546496)
+
 # TASTE BUDDIEZ (Group 26)
 
 ## Our Story
@@ -30,13 +32,7 @@ At Taste Buddiez, we believe food is more than just fuel — it’s a connection
 * Frontend: React (Port 5173)
 * Containerization: Docker & Docker Compose
 
-## Quick Start Guide
-
-### 0. Prerequisites
-Ensure you have the following installed
-1. Git (for cloning the repository)
-2. Docker & docker-compose (for running the application)
-3. Docker Desktop (for viewing containers)
+## Quick Start Guide: SEE [INSTALL.MD](https://github.com/madisonbook/CSC510/blob/main/proj2/documentation/INSTALL.md)
 
 ### 1. Clone the Repository
 1. navigate to the directory where you want to store the software
@@ -45,17 +41,13 @@ Ensure you have the following installed
 
 ### 2. Build and Run the Application
 1. terminal: 'cd proj2'
-2. terminal: 'docker-compose up --build'
-3. navigate to [http://localhost:5173/](http://localhost:5173/) in your browser
+2. terminal: 'pip install .'
+3. terminal: 'tastebuddiez setup'
+4. terminal: 'tastebuddiez start'
+5. navigate to [http://localhost:5173/](http://localhost:5173/) in your browser
 
 ### 3. Stopping the Application
-1. terminal: 'Ctrl+C' OR 'docker-compose down'
+1. terminal: 'Ctrl+C'
 
 ### 4. Build and Run Backend Tests
-1. terminal: 'docker-compose up --build backend-tests'
-
-### 5. Other Docker Commands
-1. Run in detached mode: 'docker-compose up -d --build'
-2. Stop application and remove volumes: 'docker-compose down -v'
-3. View logs: 'docker-compose logs -f'
-4. Restart a service: 'docker-compose restart {ie. backend}'
+1. terminal: 'tastebuddiez test all'
