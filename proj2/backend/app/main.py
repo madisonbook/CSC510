@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.database import connect_to_mongo, close_mongo_connection, get_database
@@ -13,10 +15,10 @@ import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await connect_to_mongo()
+    await wait_for_mongo()
+    await run_seed_once()
     yield
-    # Shutdown
     await close_mongo_connection()
 
 
@@ -79,8 +81,8 @@ async def startup_event():
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -229,7 +229,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                         <div className="text-xs sm:text-sm">
                           <span className="font-medium">Nutrition: </span>
                           <span className="text-muted-foreground">
-                          {meal.nutrition_info.calories} cal, {meal.nutrition_info.protein_grams}g protein, {meal.nutrition_info.carbs_grams}g carbs, {meal.nutrition_info.fat_grams}g fat
+                          {meal.nutrition_info}
                           </span>
                         </div>
                         )}

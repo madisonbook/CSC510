@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { getMyMeals, createMeal, deleteMeal, updateMeal } from '../services/MealService';
+import { getMyMeals, createMeal, deleteMeal, updateMeal, uploadPhotos } from '../services/MealService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -27,7 +27,7 @@ const AVAILABLE_CUISINES = [
   '🧆 Middle Eastern', '🥖 French'
 ];
 
-export default function MyMealsTab({ userLocation }) {
+export default function MyMealsTab({ userLocation, onMealsUpdate }) {
   const [meals, setMeals] = useState([]);
   const [editMeal, setEditMeal] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -45,9 +45,11 @@ export default function MyMealsTab({ userLocation }) {
     allergens: [],
     isSwapAvailable: false,
     ingredients: '',
-    nutritionInfo: { calories: '', protein_grams: '', carbs_grams: '', fat_grams: '' },
+    nutritionInfo: '',
     pickupAddress: '',
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   // fetch existing meals
   useEffect(() => {
@@ -75,13 +77,27 @@ export default function MyMealsTab({ userLocation }) {
     const now = new Date();
     const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hrs later
 
+    // upload single photo if selected
+    let photoUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800";
+    if (photoFile) {
+      try {
+        const urls = await uploadPhotos([photoFile]);
+        photoUrl = urls[0]; // Take the first URL since we only upload one image
+      } catch (err) {
+        console.error('Photo upload failed:', err);
+        alert('Failed to upload photo');
+        setLoading(false);
+        return;
+      }
+    }
+
     const mealData = {
       title: formData.name,
       description: formData.description,
       cuisine_type: formData.cuisine.replace(/^[^\w]+/, ""),
-      meal_type: "Lunch",
-      photos: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800"],
-      portion_size: `${formData.servings}`,
+  meal_type: "Lunch",
+  photos: [photoUrl],
+  portion_size: `${formData.servings}`,
       available_for_sale: true,
       sale_price: parseFloat(formData.price) || 0,
       available_for_swap: formData.isSwapAvailable,
@@ -100,21 +116,29 @@ export default function MyMealsTab({ userLocation }) {
       const newMeal = await createMeal(mealData);
       const updatedMeals = await getMyMeals();
       setMeals(updatedMeals);
+      
+      // Notify parent component of the update
+      if (onMealsUpdate) {
+        onMealsUpdate(updatedMeals);
+      }
+      
       setIsAddDialogOpen(false);
 
       // Reset form
       setFormData({
-      name: '',
-      description: '',
-      cuisine: '',
-      price: '',
-      servings: '',
-      allergens: [],
-      isSwapAvailable: false,
-      ingredients: '',
-      nutritionInfo: '',
-      pickupAddress: ''
-    });
+        title: '',
+        description: '',
+        cuisine: '',
+        price: '',
+        servings: '',
+        allergens: [],
+        isSwapAvailable: false,
+        ingredients: '',
+        nutritionInfo: '',
+        pickupAddress: ''
+      });
+      setPhotoFile(null);
+      setPhotoPreview(null);
     } catch (error) {
       console.error("Error adding meal: ", error);
       toast.error(error.message);
@@ -125,7 +149,13 @@ export default function MyMealsTab({ userLocation }) {
   const handleDeleteMeal = async (mealId) => {
     try {
       await deleteMeal(mealId);
-      setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
+      const updatedMeals = meals.filter((meal) => meal.id !== mealId);
+      setMeals(updatedMeals);
+      
+      // Notify parent component of the update
+      if (onMealsUpdate) {
+        onMealsUpdate(updatedMeals);
+      }
     } catch (error) {
       console.error("Error deleting meal: ", error);
       toast.error(error.message);
@@ -318,6 +348,62 @@ export default function MyMealsTab({ userLocation }) {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* Photo upload */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="photo" className="text-sm">Photo (optional)</Label>
+                    <div className="flex flex-col items-center gap-2">
+                      {photoPreview ? (
+                        <div className="relative w-full h-48">
+                          <img
+                            src={photoPreview}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-md"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => {
+                              setPhotoFile(null);
+                              setPhotoPreview(null);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full h-48 flex flex-col items-center justify-center gap-2"
+                          onClick={() => document.getElementById('photo-upload').click()}
+                        >
+                          <Plus className="h-8 w-8" />
+                          <span>Click to upload a photo</span>
+                        </Button>
+                      )}
+                      <input
+                        id="photo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setPhotoFile(file);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setPhotoPreview(reader.result);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Upload a single image for your meal listing.</p>
                   </div>
 
                   {/* Description */}
@@ -560,7 +646,7 @@ export default function MyMealsTab({ userLocation }) {
                             <div className="text-xs sm:text-sm">
                               <span className="font-medium">Nutrition: </span>
                               <span className="text-muted-foreground">
-                                {`Calories: ${meal.nutrition_info.calories || "N/A"}, Protein: ${meal.nutrition_info.protein_grams || "N/A"}g, Carbs: ${meal.nutrition_info.carbs_grams || "N/A"}g, Fat: ${meal.nutrition_info.fat_grams || "N/A"}g`}
+                                {meal.nutrition_info}
                               </span>
                             </div>
                             )}                 
@@ -759,61 +845,6 @@ export default function MyMealsTab({ userLocation }) {
               className="resize-none text-sm"
             />
           </div>
-
-        {/* Nutrition Info (Optional) */}
-        <div className="space-y-1.5 sm:space-y-2">
-          <Label className="text-sm">Nutrition Info (Optional)</Label>
-          <div className="grid sm:grid-cols-4 gap-3">
-          <Input
-            type="number"
-            placeholder="Calories"
-            value={formData.nutritionInfo?.calories || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, calories: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-          <Input
-            type="number"
-            placeholder="Protein (g)"
-            value={formData.nutritionInfo?.protein_grams || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, protein_grams: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-          <Input
-            type="number"
-            placeholder="Carbs (g)"
-            value={formData.nutritionInfo?.carbs_grams || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, carbs_grams: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-          <Input
-            type="number"
-            placeholder="Fat (g)"
-            value={formData.nutritionInfo?.fat_grams || ""}
-            onChange={(e) =>
-              setFormData({
-              ...formData,
-              nutritionInfo: { ...formData.nutritionInfo, fat_grams: e.target.value },
-            })
-            }
-            className="h-9 sm:h-10"
-          />
-        </div>
-        </div>
 
           {/* Swap Available */}
           <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
