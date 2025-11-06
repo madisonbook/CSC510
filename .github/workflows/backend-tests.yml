@@ -2,7 +2,7 @@ name: Run Tests
 
 on:
   push:
-    branches: [ main, development ]
+    branches: [ main, development, griffin-branch-11/6 ]
   pull_request:
     branches: [ main, development ]
 
@@ -17,6 +17,10 @@ jobs:
     - name: Build test services
       run: |
         docker compose -f proj2/docker-compose.yml --profile test build
+    
+    - name: Run Auth Tests
+      run: |
+        docker compose -f proj2/docker-compose.yml --profile test up test-auth --abort-on-container-exit --exit-code-from test-auth
     
     - name: Run Meal Tests
       run: |

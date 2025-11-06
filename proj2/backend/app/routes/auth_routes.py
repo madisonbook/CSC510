@@ -239,7 +239,7 @@ async def login(credentials: UserLogin):
             "role": user["role"],
             "full_name": user["full_name"],
         }
-    
+
     # User not found
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

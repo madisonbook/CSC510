@@ -90,6 +90,28 @@ services:
       command: pytest app/tests/test_meals.py -v --tb=short --color=yes
       profiles: [test]
 
+    test-auth:
+      build:
+        context: ./backend
+        dockerfile: Dockerfile.test
+      container_name: test_auth
+      depends_on:
+        test-mongo:
+          condition: service_healthy
+      environment:
+        - TEST_MONGO_URL=mongodb://test-mongo:27017
+        - TEST_DB_NAME=test_meal_db
+        - PYTHONPATH=/app
+        - PYTHONUNBUFFERED=1
+      volumes:
+        - ./backend/app:/app/app
+        - ./backend/pytest.ini:/app/pytest.ini
+        - ./backend/.coveragerc:/app/.coveragerc
+        - ./backend/htmlcov:/app/htmlcov
+      networks: [test-network]
+      command: pytest app/tests/test_auth.py -v --tb=short --color=yes
+      profiles: [test]
+
     test-users:
       build:
         context: ./backend
