@@ -43,13 +43,8 @@ jobs:
           
       - name: Run tests
         run: |
-          tastebuddiez test all
+          tastebuddiez test all --coverage
         continue-on-error: true
-
-      - name: Run tests with coverage
-        run: |
-          cd proj2/backend
-          pytest --cov=tastebuddiez --cov-report=xml --cov-report=html --cov-fail-under=70
         
       - name: Upload coverage to Codecov
         if: always()
