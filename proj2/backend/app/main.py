@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-import os
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.database import connect_to_mongo, close_mongo_connection, get_database
@@ -8,7 +7,6 @@ from app.routes.auth_routes import router as auth_router
 from app.routes.user_routes import router as user_router
 from app.routes.meal_routes import router as meal_router
 from pymongo import ASCENDING
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 import os
 
@@ -16,8 +14,6 @@ import os
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
-    await wait_for_mongo()
-    await run_seed_once()
     yield
     await close_mongo_connection()
 
