@@ -143,6 +143,7 @@ def status():
 @click.argument('test_suite', required=False, default='all')
 @click.option('--build', is_flag=True, help='Rebuild test containers before running')
 @click.option('--keep', is_flag=True, help='Keep containers after tests finish')
+@click.option('--coverage', is_flag=True, help='Generate and extract coverage reports after tests')
 def test(test_suite, build, keep):
     """Run tests (meals, users, main, or all)"""
     try:
@@ -183,6 +184,36 @@ def test(test_suite, build, keep):
         
         # Run tests
         result = subprocess.run(cmd)
+
+        # If coverage enabled, try to extract reports from the container
+        if coverage:
+            click.secho("\nExtracting coverage reports...", fg='cyan')
+            
+            # Find the container ID (test service name should match)
+            container_name = f"{service_name}".replace('_', '')
+            container_id = subprocess.run(
+                ['docker', 'ps', '-aqf', f"name={service_name}"],
+                capture_output=True,
+                text=True
+            ).stdout.strip()
+            
+            if container_id:
+                output_dir = os.path.join(project_root, "backend", "coverage_reports")
+                os.makedirs(output_dir, exist_ok=True)
+                
+                files_to_copy = {
+                    "/app/coverage.xml": os.path.join(output_dir, "coverage.xml"),
+                    "/app/htmlcov": os.path.join(output_dir, "htmlcov"),
+                }
+                
+                for src, dest in files_to_copy.items():
+                    try:
+                        subprocess.run(["docker", "cp", f"{container_id}:{src}", dest], check=True)
+                        click.secho(f"✅ Copied {src} → {dest}", fg='green')
+                    except subprocess.CalledProcessError:
+                        click.secho(f"⚠️ Could not copy {src} (not found in container)", fg='yellow')
+            else:
+                click.secho("⚠️ No test container found for coverage extraction", fg='yellow')
         
         # Cleanup unless --keep flag is set
         if not keep:
