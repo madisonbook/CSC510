@@ -230,7 +230,7 @@ class MealCreate(BaseModel):
     ingredients: str = ""  # Comma-separated ingredient list as string
     photos: List[str] = []  # URLs to uploaded photos
     allergen_info: AllergenInfo
-    nutrition_info: Optional[str] = None  # Free-form nutrition info text
+    nutrition_info: Optional[str] = None
     portion_size: str  # e.g., "Serves 2", "1 portion"
     available_for_sale: bool = True
     sale_price: Optional[float] = None  # Price in USD
