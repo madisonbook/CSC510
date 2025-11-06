@@ -5,8 +5,8 @@ Tests user registration, login, and authentication flows
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
-from datetime import datetime
+from httpx import AsyncClient, ASGITransport
+from datetime import datetime, timedelta
 from bson import ObjectId
 
 TEST_DB_NAME = "test_meal_db"
@@ -15,13 +15,6 @@ TEST_DB_NAME = "test_meal_db"
 # ============================================================
 # FIXTURES
 # ============================================================
-
-
-@pytest_asyncio.fixture
-async def test_db(mongo_client):
-    """Get test database instance"""
-    db = mongo_client[TEST_DB_NAME]
-    return db
 
 
 @pytest_asyncio.fixture
@@ -36,11 +29,38 @@ async def async_client(test_db):
     # Override the global database variable
     database_module.database = test_db
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    # Use ASGITransport instead of deprecated app= argument
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
     # Restore original database
     database_module.database = original_database
+
+@pytest_asyncio.fixture
+async def test_db(mongo_client):
+    """Get test database instance"""
+    db = mongo_client[TEST_DB_NAME]
+    return db
+
+
+#@pytest_asyncio.fixture
+#async def async_client(test_db):
+#    """Create async test client with database override"""
+#    from app.main import app
+#    import app.database as database_module
+
+    # Store original database
+#    original_database = database_module.database
+
+    # Override the global database variable
+#    database_module.database = test_db
+
+#    async with AsyncClient(app=app, base_url="http://test") as ac:
+#        yield ac
+
+    # Restore original database
+#    database_module.database = original_database
 
 
 @pytest_asyncio.fixture

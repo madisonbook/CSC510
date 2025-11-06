@@ -16,3 +16,4 @@ pytest-cov
 coverage
 flake8
 black>=24.10.0
+setuptools
