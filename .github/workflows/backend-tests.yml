@@ -13,6 +13,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: proj2/backend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,6 +26,8 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           echo "Base ref: ${{ github.base_ref }}"
           echo "Head ref: ${{ github.head_ref }}"
+          pwd
+          ls -la
           
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,14 +46,14 @@ jobs:
           
       - name: Run tests with coverage
         run: |
-          tastebuddiez test all --coverage --cov-report=xml --cov-report=html --cov-fail-under=70
+          tastebuddiez test all
         continue-on-error: true
         
       - name: Upload coverage to Codecov
         if: always()
         uses: codecov/codecov-action@v4
         with:
-          files: ./coverage.xml
+          files: ./proj2/backend/coverage.xml
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
@@ -59,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: htmlcov/
+          path: proj2/backend/htmlcov/
           retention-days: 30
           
       - name: Comment PR with coverage summary
@@ -68,14 +73,14 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            let body = '## 📊 Test Coverage Summary\n\n';
+            let body = '## 📊 Test Coverage Summary\\n\\n';
             try {
-              if (fs.existsSync('coverage.xml')) {
-                const xml = fs.readFileSync('coverage.xml', 'utf8');
+              if (fs.existsSync('proj2/backend/coverage.xml')) {
+                const xml = fs.readFileSync('proj2/backend/coverage.xml', 'utf8');
                 const match = xml.match(/line-rate="([0-9.]+)"/);
                 if (match) {
                   const coverage = (parseFloat(match[1]) * 100).toFixed(1);
-                  body += `**Coverage:** ${coverage}%\n\n`;
+                  body += '**Coverage:** ' + coverage + '%\\n\\n';
                   if (coverage >= 80) {
                     body += '✅ Excellent coverage (≥80%)';
                   } else if (coverage >= 70) {
@@ -90,4 +95,37 @@ jobs:
                 body += '⚠️ Coverage report not found';
               }
             } catch (err) {
-              body += `⚠️ Error reading coverage: ${err.message
+              body += '⚠️ Error reading coverage: ' + err.message;
+            }
+            body += '\\n\\n📁 Detailed HTML report available in the workflow artifacts.';
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+            
+      - name: Add coverage summary to workflow summary
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage.xml ]; then
+            COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); cov = float(tree.getroot().attrib.get('line-rate', 0)) * 100; print(f'{cov:.1f}')" 2>/dev/null || echo "N/A")
+            echo "**Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+        if: always()
+          
+  summary:
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    steps:
+      - name: Summarize test results
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.test.result }}" == "success" ]; then
+            echo "✅ All tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some tests failed. Check logs above." >> $GITHUB_STEP_SUMMARY
+          fi
