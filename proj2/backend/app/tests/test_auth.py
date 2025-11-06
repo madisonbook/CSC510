@@ -37,6 +37,7 @@ async def async_client(test_db):
     # Restore original database
     database_module.database = original_database
 
+
 @pytest_asyncio.fixture
 async def test_db(mongo_client):
     """Get test database instance"""
@@ -44,22 +45,22 @@ async def test_db(mongo_client):
     return db
 
 
-#@pytest_asyncio.fixture
-#async def async_client(test_db):
+# @pytest_asyncio.fixture
+# async def async_client(test_db):
 #    """Create async test client with database override"""
 #    from app.main import app
 #    import app.database as database_module
 
-    # Store original database
+# Store original database
 #    original_database = database_module.database
 
-    # Override the global database variable
+# Override the global database variable
 #    database_module.database = test_db
 
 #    async with AsyncClient(app=app, base_url="http://test") as ac:
 #        yield ac
 
-    # Restore original database
+# Restore original database
 #    database_module.database = original_database
 
 

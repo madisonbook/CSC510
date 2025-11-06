@@ -29,15 +29,25 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+frontend_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+)
 
 if os.path.exists(os.path.join(frontend_path, "index.html")):
-    app.mount("/static", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="static")
+    app.mount(
+        "/static",
+        StaticFiles(directory=os.path.join(frontend_path, "assets")),
+        name="static",
+    )
     app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
 else:
+
     @app.get("/")
     async def root_fallback():
-        return JSONResponse({"message": "Welcome to Taste Buddiez API (frontend not built)"})
+        return JSONResponse(
+            {"message": "Welcome to Taste Buddiez API (frontend not built)"}
+        )
+
 
 @app.get("/")
 async def root():
@@ -100,8 +110,8 @@ app.include_router(user_router)
 app.include_router(meal_router)
 
 
-#@app.get("/")
-#async def root():
+# @app.get("/")
+# async def root():
 #    return {
 #        "message": "Welcome to Taste Buddiez API",
 #        "tagline": "Connecting neighbors through homemade meals",
@@ -112,7 +122,9 @@ app.include_router(meal_router)
 async def health_check():
     return {"status": "healthy"}
 
+
 def run():
     """Entry point for running the app as an installed package."""
     import uvicorn
+
     uvicorn.run("app.main:app", host="0.0.0.0", port=5173, reload=True)
