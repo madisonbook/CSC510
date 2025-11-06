@@ -100,35 +100,6 @@ Creates a new user account and sends verification email.
 
 ---
 
-### Verify Email
-
-Verifies user email address using token from verification email.
-
-**Endpoint:** `GET /api/auth/verify`
-
-**Query Parameters:**
-- `email` (string, required) - User's email address
-- `token` (string, required) - Verification token from email
-
-**Example Request:**
-```bash
-curl "http://localhost:8000/api/auth/verify?email=user@example.com&token=abc123xyz"
-```
-
-**Response:** `200 OK`
-```json
-{
-  "message": "Email verified successfully!",
-  "verified": true
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Invalid or expired token
-- `404 Not Found` - Account not found
-
----
-
 ### Login
 
 Authenticates user and returns user information.
@@ -157,34 +128,6 @@ Authenticates user and returns user information.
 **Error Responses:**
 - `401 Unauthorized` - Incorrect email or password
 - `403 Forbidden` - Email not verified
-
----
-
-### Resend Verification Email
-
-Sends a new verification email to the user.
-
-**Endpoint:** `POST /api/auth/resend-verification`
-
-**Query Parameters:**
-- `email` (string, required) - User's email address
-- `account_type` (string, optional) - Default: "user"
-
-**Example Request:**
-```bash
-curl -X POST "http://localhost:8000/api/auth/resend-verification?email=user@example.com"
-```
-
-**Response:** `200 OK`
-```json
-{
-  "message": "Verification email sent successfully"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` - Account already verified
-- `404 Not Found` - Account not found
 
 ---
 
