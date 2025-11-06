@@ -33,5 +33,6 @@ dependencies = [
 tastebuddiez = "tastebuddiez.cli:main"
 
 [tool.setuptools]
+package-dir = {"tastebuddiez" = "../tastebuddiez"}
 packages = ["app", "tastebuddiez"]
 include-package-data = true
