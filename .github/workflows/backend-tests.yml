@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[test]
+          pip install -e .
           pip install pytest pytest-cov codecov
           
       - name: Run tests with coverage
