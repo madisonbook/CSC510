@@ -6,8 +6,8 @@ import os
 import uuid
 
 from ..models import MealCreate, MealUpdate, MealResponse, MealStatus
-from app.database import get_database
-from app.dependencies import get_current_user, get_optional_current_user
+from ..database import get_database
+from ..dependencies import get_current_user, get_optional_current_user
 
 router = APIRouter(prefix="/api/meals", tags=["Meals"])
 

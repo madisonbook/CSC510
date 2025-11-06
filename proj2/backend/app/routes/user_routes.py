@@ -9,8 +9,8 @@ from ..models import (
     SocialMediaLinks,
     UserStats,
 )
-from app.database import get_database
-from app.dependencies import get_current_user  # For authentication
+from ..database import get_database
+from ..dependencies import get_current_user  # For authentication
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
