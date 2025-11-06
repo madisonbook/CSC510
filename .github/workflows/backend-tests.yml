@@ -47,7 +47,8 @@ jobs:
       - name: Run tests with coverage
         run: |
           tastebuddiez setup
-          tastebuddiez test all --coverage
+          tastebuddiez test all --coverage --keep
+          
           CONTAINER_ID=$(docker ps -alqf "name=test_all")
           echo "Found container: $CONTAINER_ID"
           
