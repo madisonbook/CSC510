@@ -34,7 +34,7 @@ jobs:
         
     - name: Build test services
       run: |
-        docker compose -f proj2/docker-compose.yml --profile test build
+        docker compose -f docker-compose.yml --profile test build
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -45,8 +45,6 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
           
-     
-          
     - name: Create coverage folder
       run: mkdir -p ./coverage_reports
 
@@ -54,37 +52,34 @@ jobs:
       run: |
         tastebuddiez setup
         tastebuddiez test all --coverage --keep
-          
+        
         CONTAINER_ID=$(docker ps -alqf "name=test_all")
         echo "Found container: $CONTAINER_ID"
-          
+        
         if [ -n "$CONTAINER_ID" ]; then
           docker cp $CONTAINER_ID:/app/coverage.xml ./coverage.xml || echo "Could not copy coverage.xml"
           docker cp $CONTAINER_ID:/app/htmlcov ./htmlcov || echo "Could not copy htmlcov"
         else
           echo "No test container found"
+          exit 1  # Add this to fail the job if container not found
         fi
-      env:
-        COVERAGE_XML: /app/coverage_reports/coverage.xml
-        COVERAGE_HTML: /app/coverage_reports/htmlcov
-          
-        
+
     - name: Upload coverage to Codecov
       if: always()
       uses: codecov/codecov-action@v4
       with:
-        files: ./proj2/backend/coverage.xml
+        files: ./coverage.xml  # Fixed path
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
-          
+    
     - name: Upload HTML coverage report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
-        path: proj2/backend/htmlcov/
+        path: ./htmlcov/  # Fixed path
         retention-days: 30
             
     - name: Add coverage summary to workflow summary
