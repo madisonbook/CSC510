@@ -144,7 +144,7 @@ def status():
 @click.option('--build', is_flag=True, help='Rebuild test containers before running')
 @click.option('--keep', is_flag=True, help='Keep containers after tests finish')
 @click.option('--coverage', is_flag=True, help='Generate and extract coverage reports after tests')
-def test(test_suite, build, keep):
+def test(test_suite, build, keep, coverage):
     """Run tests (meals, users, main, or all)"""
     try:
         project_root = get_project_root()
