@@ -28,13 +28,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          cd backend
           pip install -e .[test]
           pip install pytest pytest-cov codecov
           
       - name: Run tests with coverage
         run: |
-          cd backend
           tastebuddiez test all
         continue-on-error: true
         
