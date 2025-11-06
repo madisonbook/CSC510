@@ -1,14 +1,14 @@
 name: Run Tests
 on:
   push:
-    branches: 
-      - main
-      - development
+    branches: [main, development]
   pull_request:
-    branches: 
-      - main
-      - development
-    types: [opened, synchronize, reopened]
+    branches: [main, development]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   test:
@@ -20,15 +20,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Debug - Show branch info
-        run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Base ref: ${{ github.base_ref }}"
-          echo "Head ref: ${{ github.head_ref }}"
-          pwd
-          ls -la
-          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -38,11 +29,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .[test]
-          
-      - name: Verify tastebuddiez installation
-        run: |
-          which tastebuddiez || echo "tastebuddiez command not found"
-          pip list | grep tastebuddiez || echo "tastebuddiez package not found"
+          pip install pytest pytest-cov codecov
           
       - name: Run tests with coverage
         run: |
@@ -84,9 +71,9 @@ jobs:
                   if (coverage >= 80) {
                     body += '✅ Excellent coverage (≥80%)';
                   } else if (coverage >= 70) {
-                    body += '⚠️ Good coverage (≥70%), aim higher';
+                    body += '⚠️ Good coverage (≥70%)';
                   } else {
-                    body += '❌ Coverage below 70%, needs improvement';
+                    body += '❌ Coverage below 70%';
                   }
                 } else {
                   body += '⚠️ Could not parse coverage percentage';
@@ -106,6 +93,7 @@ jobs:
             });
             
       - name: Add coverage summary to workflow summary
+        if: always()
         run: |
           echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
           if [ -f coverage.xml ]; then
@@ -114,7 +102,6 @@ jobs:
           else
             echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
           fi
-        if: always()
           
   summary:
     runs-on: ubuntu-latest
