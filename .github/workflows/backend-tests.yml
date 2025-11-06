@@ -38,7 +38,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           ln -s ../tastebuddiez tastebuddiez
-          pip install .
+          pip install -e .
           pip install pytest pytest-cov codecov
           
       - name: Create coverage folder
