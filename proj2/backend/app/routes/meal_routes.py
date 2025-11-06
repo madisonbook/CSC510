@@ -142,7 +142,7 @@ def meal_to_response(meal: dict, seller: dict) -> MealResponse:
         portion_size=meal["portion_size"],
         available_for_sale=meal["available_for_sale"],
         sale_price=meal.get("sale_price"),
-        available_for_swap=meal["available_for_swap"],
+        available_for_swap=meal.get("available_for_swap", False),
         swap_preferences=meal.get("swap_preferences", []),
         status=meal["status"],
         preparation_date=meal["preparation_date"],

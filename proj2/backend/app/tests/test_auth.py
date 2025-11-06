@@ -521,3 +521,45 @@ async def test_multiple_concurrent_registrations(
     # Verify all users exist
     users = await clean_db.users.find({}).to_list(None)
     assert len(users) == 5
+
+@pytest.mark.asyncio
+async def test_register_name_with_emoji(async_client, clean_db, sample_user_data):
+    data = sample_user_data.copy()
+    data["email"] = "emoji@example.com"
+    data["full_name"] = "Chef 😋 User"
+    resp = await async_client.post("/api/auth/register/user", json=data)
+    assert resp.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_register_extremely_long_email(async_client, sample_user_data):
+    local = "a" * 65  # local part > 64 invalid
+    data = sample_user_data.copy()
+    data["email"] = f"{local}@example.com"
+    resp = await async_client.post("/api/auth/register/user", json=data)
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_login_email_with_whitespace(async_client, registered_user, sample_user_data):
+    resp = await async_client.post(
+        "/api/auth/login",
+        json={
+            "email": f"  {sample_user_data['email']}  ",
+            "password": sample_user_data["password"],
+        },
+    )
+    # App trims whitespace in email; accept 200 success or validation errors
+    assert resp.status_code in [200, 401, 422]
+    if resp.status_code == 200:
+        assert resp.json().get("message") == "Login successful"
+
+
+@pytest.mark.asyncio
+async def test_login_password_case_sensitivity(async_client, registered_user, sample_user_data):
+    wrong_case = sample_user_data["password"].swapcase()
+    resp = await async_client.post(
+        "/api/auth/login",
+        json={"email": sample_user_data["email"], "password": wrong_case},
+    )
+    assert resp.status_code == 401

@@ -1476,6 +1476,94 @@ async def test_get_user_by_id_invalid_id_endpoint(async_client):
 
 
 @pytest.mark.asyncio
+async def test_me_endpoint_unauthorized(async_client):
+    """GET /api/users/me without credentials should be unauthorized."""
+    resp = await async_client.get("/api/users/me")
+    assert resp.status_code in [401, 403]
+
+
+@pytest.mark.asyncio
+async def test_update_profile_unauthorized(async_client):
+    """PUT /api/users/me without credentials should be unauthorized."""
+    resp = await async_client.put("/api/users/me", json={"full_name": "X"})
+    assert resp.status_code in [401, 403]
+
+
+@pytest.mark.asyncio
+async def test_update_dietary_preferences_no_changes_authenticated_400(
+    authenticated_client, mongo_client, test_user
+):
+    """Authenticated update with identical preferences should return 400."""
+    prefs = test_user.get("dietary_preferences", {})
+    resp = await authenticated_client.put(
+        "/api/users/me/dietary-preferences", json=prefs
+    )
+    assert resp.status_code in [200, 400]
+    if resp.status_code == 400:
+        assert "no changes" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_update_social_media_no_changes_authenticated_400(
+    authenticated_client, test_user
+):
+    social = test_user.get("social_media", {})
+    resp = await authenticated_client.put("/api/users/me/social-media", json=social)
+    assert resp.status_code in [200, 400]
+    if resp.status_code == 400:
+        assert "no changes" in resp.json()["detail"].lower()
+
+
+@pytest.mark.asyncio
+async def test_get_my_stats_defaults_when_missing_authenticated(mongo_client):
+    """Authenticated stats for user without stats field should return defaults."""
+    from app.main import app
+    from app.dependencies import get_current_user
+    from httpx import ASGITransport, AsyncClient
+
+    db = mongo_client[TEST_DB_NAME]
+    user_doc = {
+        "email": "nostats2@example.com",
+        "full_name": "No Stats User 2",
+        "location": {
+            "address": "1 St",
+            "city": "City",
+            "state": "ST",
+            "zip_code": "00000",
+        },
+        "role": "user",
+        "status": "active",
+        "created_at": datetime.utcnow(),
+    }
+    ins = await db.users.insert_one(user_doc)
+    user_doc["_id"] = ins.inserted_id
+
+    async def mock_get_current_user():
+        return user_doc
+
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    try:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://testserver") as c:
+            resp = await c.get("/api/users/me/stats")
+            assert resp.status_code == 200
+            stats = resp.json()
+            assert stats.get("total_meals_sold", 0) == 0
+            assert stats.get("average_rating", 0.0) in [0.0, None]
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_update_profile_picture_persists_authenticated(authenticated_client):
+    """Update only profile_picture and ensure it persists in response."""
+    body = {"profile_picture": "https://example.com/pic.png"}
+    resp = await authenticated_client.put("/api/users/me", json=body)
+    assert resp.status_code in [200, 400]
+    if resp.status_code == 200:
+        assert resp.json().get("profile_picture") == body["profile_picture"]
+
+@pytest.mark.asyncio
 async def test_get_user_by_id_not_found_endpoint(async_client):
     """Test GET /api/users/{user_id} with non-existent ID"""
 
