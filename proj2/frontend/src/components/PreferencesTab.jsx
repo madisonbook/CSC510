@@ -11,14 +11,19 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 
 const AVAILABLE_CUISINES = [
-  '🍕 Italian', '🍜 Asian', 'Latino', '🌮 Mexican', '🍔 American', '🥗 Mediterranean',
-  '🍛 Indian', '🍱 Japanese', 'Chinese', 'Korean', '🥘 Thai', 'Vietnamese', 
-  '🧆 Middle Eastern', '🥖 French'
+  'Italian', 'Asian', 'Latino', 'Mexican', 'American', 'Mediterranean',
+  'Indian', 'Japanese', 'Chinese', 'Korean', 'Thai', 'Vietnamese', 
+  'Middle Eastern', 'French', 'German'
 ];
 
 const COMMON_ALLERGENS = [
   '🥜 Nuts', '🥛 Dairy', '🍳 Eggs', '🌾 Gluten', '🦐 Shellfish',
   '🐟 Fish', '🍓 Soy', '🌽 Corn', '🥥 Coconut'
+];
+
+const DIETARY_RESTRICTIONS = [
+  '🌱 Vegetarian', '🥬 Vegan', '🥩 Keto', '🌾 Gluten-Free', '🧂 Low-Sodium',
+  '🍯 Paleo', '🥛 Lactose-Free', '🫘 Kosher', '☪️ Halal'
 ];
 
 export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
@@ -44,9 +49,16 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
     });
   };
 
+  const handleDietaryToggle = (dietary) => {
+    onPreferencesChange({
+      ...preferences,
+      dietary_restrictions: toggleArrayItem(preferences.dietary_restrictions, dietary)
+    });
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid sm:grid-cols-1 gap-4 sm:gap-6">
         {/* Cuisine Preferences */}
         <Card>
           <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
@@ -74,8 +86,10 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
             </div>
           </CardContent>
         </Card>
+        </div>
 
-        {/* Allergens */}
+        {/* Allergens & Dietary*/}
+        <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
             <CardTitle className="text-lg sm:text-xl">Allergens</CardTitle>
@@ -93,6 +107,34 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
                   onClick={() => handleAllergenToggle(allergen)}
                 >
                   {allergen}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+
+        <Card>
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-lg sm:text-xl">Dietary Restrictions</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Your lifestyle choices
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="flex flex-wrap gap-2">
+              {DIETARY_RESTRICTIONS.map((dietary) => (
+                <Badge
+                  key={dietary}
+                  variant={preferences.dietary_restrictions.includes(dietary) ? "secondary" : "outline"}
+                  className={`cursor-pointer transition-all hover:scale-105 ${
+                    preferences.dietary_restrictions.includes(dietary)
+                      ? 'bg-accent hover:bg-accent/90'
+                      : 'hover:border-accent hover:text-accent-foreground'
+                  }`}
+                  onClick={() => handleDietaryToggle(dietary)}
+                >
+                  {dietary}
                 </Badge>
               ))}
             </div>

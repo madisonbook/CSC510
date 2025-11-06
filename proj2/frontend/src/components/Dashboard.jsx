@@ -115,6 +115,7 @@ export default function Dashboard({ onLogout }) {
       : {
           cuisines: [], // Empty by default - show all cuisines
           allergens: [],
+          dietary_restrictions: [],
           priceRange: [1, 4], // Show all price ranges by default
           maxDistance: 25, // Maximum distance
           userLocation: null // Will store { address: string, lat: number, lng: number }
