@@ -5,9 +5,8 @@ Tests user registration, login, and authentication flows
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from datetime import datetime
-from bson import ObjectId
 
 TEST_DB_NAME = "test_meal_db"
 
@@ -15,13 +14,6 @@ TEST_DB_NAME = "test_meal_db"
 # ============================================================
 # FIXTURES
 # ============================================================
-
-
-@pytest_asyncio.fixture
-async def test_db(mongo_client):
-    """Get test database instance"""
-    db = mongo_client[TEST_DB_NAME]
-    return db
 
 
 @pytest_asyncio.fixture
@@ -36,11 +28,39 @@ async def async_client(test_db):
     # Override the global database variable
     database_module.database = test_db
 
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    # Use ASGITransport instead of deprecated app= argument
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
     # Restore original database
     database_module.database = original_database
+
+
+@pytest_asyncio.fixture
+async def test_db(mongo_client):
+    """Get test database instance"""
+    db = mongo_client[TEST_DB_NAME]
+    return db
+
+
+# @pytest_asyncio.fixture
+# async def async_client(test_db):
+#    """Create async test client with database override"""
+#    from app.main import app
+#    import app.database as database_module
+
+# Store original database
+#    original_database = database_module.database
+
+# Override the global database variable
+#    database_module.database = test_db
+
+#    async with AsyncClient(app=app, base_url="http://test") as ac:
+#        yield ac
+
+# Restore original database
+#    database_module.database = original_database
 
 
 @pytest_asyncio.fixture
@@ -521,3 +541,50 @@ async def test_multiple_concurrent_registrations(
     # Verify all users exist
     users = await clean_db.users.find({}).to_list(None)
     assert len(users) == 5
+
+
+@pytest.mark.asyncio
+async def test_register_name_with_emoji(async_client, clean_db, sample_user_data):
+    data = sample_user_data.copy()
+    data["email"] = "emoji@example.com"
+    data["full_name"] = "Chef 😋 User"
+    resp = await async_client.post("/api/auth/register/user", json=data)
+    assert resp.status_code == 201
+
+
+@pytest.mark.asyncio
+async def test_register_extremely_long_email(async_client, sample_user_data):
+    local = "a" * 65  # local part > 64 invalid
+    data = sample_user_data.copy()
+    data["email"] = f"{local}@example.com"
+    resp = await async_client.post("/api/auth/register/user", json=data)
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_login_email_with_whitespace(
+    async_client, registered_user, sample_user_data
+):
+    resp = await async_client.post(
+        "/api/auth/login",
+        json={
+            "email": f"  {sample_user_data['email']}  ",
+            "password": sample_user_data["password"],
+        },
+    )
+    # App trims whitespace in email; accept 200 success or validation errors
+    assert resp.status_code in [200, 401, 422]
+    if resp.status_code == 200:
+        assert resp.json().get("message") == "Login successful"
+
+
+@pytest.mark.asyncio
+async def test_login_password_case_sensitivity(
+    async_client, registered_user, sample_user_data
+):
+    wrong_case = sample_user_data["password"].swapcase()
+    resp = await async_client.post(
+        "/api/auth/login",
+        json={"email": sample_user_data["email"], "password": wrong_case},
+    )
+    assert resp.status_code == 401

@@ -6,7 +6,7 @@ import React from 'react';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import { Button } from "./components/ui/button"
-import EmailVerification from './components/EmailVerification';
+
 import './styles/globalstyles.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -19,7 +19,6 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/verify" element={<EmailVerification />} />
       </Routes>
     </Router>
 

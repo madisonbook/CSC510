@@ -5,6 +5,7 @@ omit =
     */__pycache__/*
     */venv/*
     utils.py
+    seed_data.py
 
 [report]
 exclude_lines =

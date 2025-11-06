@@ -145,7 +145,14 @@ function LandingPage({ onAuthSuccess }) {
         toast.success(data.message || "Account created successfully. Please verify your email.");
         navigate("/dashboard");
       } else {
-        toast.error(data.detail || data.message || "Signup failed. Please try again.");
+        // Handle Pydantic/FastAPI validation errors which come back as
+        // { detail: [ {loc:..., msg:..., type:...}, ... ] }
+        if (data && Array.isArray(data.detail)) {
+          const messages = data.detail.map(d => d.msg || JSON.stringify(d)).join('; ');
+          toast.error(messages);
+        } else {
+          toast.error(data.detail || data.message || "Signup failed. Please try again.");
+        }
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -548,10 +555,9 @@ function LandingPage({ onAuthSuccess }) {
               </div>
             </div>
           </div>
-        </div>
+  </div>
 
-
-        {/* Partners & Collaborators Section */}
+  {/* Partners & Collaborators Section */}
         <div className="mt-20 mb-32 px-4 text-center max-w-7xl mx-auto">
           <h2 className="text-primary text-3xl sm:text-4xl md:text-5xl font-serif font-semibold tracking-tight mb-8">
             Our Partners & Collaborators
@@ -589,19 +595,27 @@ function LandingPage({ onAuthSuccess }) {
         </div>
 
 
+        {/* Support / Contact */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+          <div className="text-center">
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Need help? Reach out to our support team at
+              <a href="mailto:tbuddiez@yahoo.com" className="ml-2 text-primary underline">tbuddiez@yahoo.com</a>
+            </p>
+          </div>
+        </div>
+
         {/* Footer / Copyright Section */}
         <footer className="bg-primary/10 backdrop-blur-sm border-t border-primary/20 py-6 mt-16">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left space-y-2 sm:space-y-0">
-          <span className="text-sm sm:text-base text-muted-foreground">
-            &copy; {new Date().getFullYear()} Taste Buddiez. Developed by Madison Book, Alice Guth, Cynthia Espinoza-Arredondo, & Griffin Pitts. All rights reserved.
-          </span>
-          <p className="text-xs sm:text-sm text-muted-foreground font-sans">
-            Licensed under the MIT License. 
-          </p>
-        </div>
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left space-y-2 sm:space-y-0">
+            <span className="text-sm sm:text-base text-muted-foreground">
+              &copy; {new Date().getFullYear()} Taste Buddiez. Developed by Madison Book, Alice Guth, Cynthia Espinoza-Arredondo, & Griffin Pitts. All rights reserved.
+            </span>
+            <p className="text-xs sm:text-sm text-muted-foreground font-sans">
+              Licensed under the MIT License.
+            </p>
+          </div>
         </footer>
-
-
       </div>
     </div>
   );

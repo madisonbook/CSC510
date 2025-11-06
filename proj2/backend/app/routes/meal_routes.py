@@ -1,11 +1,13 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, UploadFile, File
 from datetime import datetime
 from bson import ObjectId
 from typing import List, Optional
+import os
+import uuid
 
 from ..models import MealCreate, MealUpdate, MealResponse, MealStatus
-from app.database import get_database
-from app.dependencies import get_current_user
+from ..database import get_database
+from ..dependencies import get_current_user, get_optional_current_user
 
 router = APIRouter(prefix="/api/meals", tags=["Meals"])
 
@@ -133,14 +135,14 @@ def meal_to_response(meal: dict, seller: dict) -> MealResponse:
         description=meal["description"],
         cuisine_type=meal["cuisine_type"],
         meal_type=meal["meal_type"],
-        ingredients=meal.get("ingredients", []),
+        ingredients=meal.get("ingredients"),
         photos=meal.get("photos", []),
         allergen_info=meal["allergen_info"],
         nutrition_info=meal.get("nutrition_info"),
         portion_size=meal["portion_size"],
         available_for_sale=meal["available_for_sale"],
         sale_price=meal.get("sale_price"),
-        available_for_swap=meal["available_for_swap"],
+        available_for_swap=meal.get("available_for_swap", False),
         swap_preferences=meal.get("swap_preferences", []),
         status=meal["status"],
         preparation_date=meal["preparation_date"],
@@ -166,15 +168,53 @@ def check_meal_matches_dietary_restriction(
         if any(allergen.lower() in ma.lower() for ma in meal_allergens):
             return False
 
-    # Check ingredients
-    meal_ingredients = [
-        ing.get("name", "").lower() for ing in meal.get("ingredients", [])
-    ]
+    # Check ingredients (now a string)
+    meal_ingredients_str = meal.get("ingredients", "").lower()
     for excluded_ing in exclusions["ingredients"]:
-        if any(excluded_ing in ing for ing in meal_ingredients):
+        if excluded_ing in meal_ingredients_str:
             return False
 
     return True
+
+
+# Upload one or more photos for a meal. Returns list of accessible URLs.
+@router.post("/upload", response_model=List[str])
+async def upload_photos(
+    files: List[UploadFile] = File(...),
+    current_user: Optional[dict] = Depends(get_optional_current_user),
+):
+    """Accept multipart file uploads and save them to server static folder.
+
+    Returns list of URLs that can be stored in the meal `photos` field.
+    """
+    uploads_dir = os.path.join(os.path.dirname(__file__), "..", "static", "uploads")
+    uploads_dir = os.path.abspath(uploads_dir)
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    saved_urls: List[str] = []
+    for upload in files:
+        # sanitize filename by prepending uuid
+        filename = f"{uuid.uuid4().hex}_{upload.filename}"
+        dest_path = os.path.join(uploads_dir, filename)
+        try:
+            content = await upload.read()
+            with open(dest_path, "wb") as f:
+                f.write(content)
+        except Exception as e:
+            # Log server-side error for easier debugging
+            print(
+                f"⚠️ Failed to save uploaded file {upload.filename} -> {dest_path}: {e}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to save uploaded file: {upload.filename}",
+            )
+
+        # URL served by StaticFiles mounted at /static
+        url_path = f"/static/uploads/{filename}"
+        saved_urls.append(url_path)
+
+    return saved_urls
 
 
 # Create a new meal
@@ -189,12 +229,10 @@ async def create_meal(meal: MealCreate, current_user: dict = Depends(get_current
         "description": meal.description,
         "cuisine_type": meal.cuisine_type,
         "meal_type": meal.meal_type,
-        "ingredients": [ing.model_dump() for ing in meal.ingredients],
+        "ingredients": meal.ingredients,
         "photos": meal.photos,
         "allergen_info": meal.allergen_info.model_dump(),
-        "nutrition_info": (
-            meal.nutrition_info.model_dump() if meal.nutrition_info else None
-        ),
+        "nutrition_info": meal.nutrition_info,
         "portion_size": meal.portion_size,
         "available_for_sale": meal.available_for_sale,
         "sale_price": meal.sale_price,
@@ -226,7 +264,8 @@ async def get_meals(
     meal_type: Optional[str] = None,
     dietary_restriction: Optional[str] = Query(
         None,
-        description="Filter by dietary restriction: vegetarian, vegan, pescatarian, gluten-free, dairy-free, nut-free, keto, paleo",
+        description="Filter by dietary restriction: vegetarian, vegan, pescatarian,"
+        " gluten-free, dairy-free, nut-free, keto, paleo",
     ),
     max_price: Optional[float] = None,
     available_for_sale: Optional[bool] = None,
@@ -454,15 +493,13 @@ async def update_meal(
     if meal_update.meal_type is not None:
         update_data["meal_type"] = meal_update.meal_type
     if meal_update.ingredients is not None:
-        update_data["ingredients"] = [
-            ing.model_dump() for ing in meal_update.ingredients
-        ]
+        update_data["ingredients"] = meal_update.ingredients
     if meal_update.photos is not None:
         update_data["photos"] = meal_update.photos
     if meal_update.allergen_info is not None:
         update_data["allergen_info"] = meal_update.allergen_info.model_dump()
     if meal_update.nutrition_info is not None:
-        update_data["nutrition_info"] = meal_update.nutrition_info.model_dump()
+        update_data["nutrition_info"] = meal_update.nutrition_info
     if meal_update.portion_size is not None:
         update_data["portion_size"] = meal_update.portion_size
     if meal_update.available_for_sale is not None:

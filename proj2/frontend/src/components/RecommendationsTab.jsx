@@ -62,16 +62,17 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
   useEffect(() => {
     if (!meals.length || !preferences) return;
     // get current date
-    const now = new Date();
+    //const now = new Date();
 
     const filtered = meals.filter((meal) => {
       if (meal.seller_id === currentUserId) return false;
       // filter out expired meals, remove these next 2 lines if needed
-      const expirationDate = new Date(meal.expires_date);
-      if (expirationDate <= now) return false;
+      //const expirationDate = new Date(meal.expires_date);
+      //if (expirationDate <= now) return false;
 
       const cuisineMatch = !(preferences?.cuisines?.length) || preferences.cuisines.includes(meal.cuisine_type);
       const allergenMatch = !meal.allergens?.some(a => preferences?.allergens?.includes(a));
+      const dietaryMatch = !meal.dietary_restrictions?.some(d => preferences?.dietary_restrictions?.includes(d));
       const priceLevel = mapPriceToLevel(Number(meal.sale_price));
       const priceMatch = !(preferences?.priceRange?.length) ||
         (priceLevel >= preferences.priceRange[0] && priceLevel <= preferences.priceRange[1]);
@@ -216,6 +217,15 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                           </div>
                         )}
 
+                          {meal.dietary_restrictions?.contains?.length > 0 && (
+                          <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                            <span className="text-xs text-muted-foreground shrink-0">Contains:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {meal.dietary_restrictions.contains.map(dietary => <Badge key={dietary} variant="destructive" className="text-xs">{dietary}</Badge>)}
+                            </div>
+                          </div>
+                        )}
+
                         {(meal.ingredients || meal.nutrition_info) && (
                           <div className="space-y-1 pt-2">
                           {meal.ingredients && (
@@ -229,7 +239,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
                         <div className="text-xs sm:text-sm">
                           <span className="font-medium">Nutrition: </span>
                           <span className="text-muted-foreground">
-                          {meal.nutrition_info.calories} cal, {meal.nutrition_info.protein_grams}g protein, {meal.nutrition_info.carbs_grams}g carbs, {meal.nutrition_info.fat_grams}g fat
+                          {meal.nutrition_info}
                           </span>
                         </div>
                         )}

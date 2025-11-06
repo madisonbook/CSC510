@@ -10,14 +10,13 @@ import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import patch
+import sys
 
 
 # Test MongoDB configuration
 TEST_MONGO_URL = os.environ.get("TEST_MONGO_URL", "mongodb://localhost:27018")
 TEST_DB_NAME = os.environ.get("TEST_DB_NAME", "test_meal_db")
 
-# Force debug output to stderr so it's visible
-import sys
 
 print(f"\n{'='*60}", file=sys.stderr, flush=True)
 print(f"[TEST CONFIG] Using MongoDB URL: {TEST_MONGO_URL}", file=sys.stderr, flush=True)

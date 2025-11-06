@@ -227,10 +227,10 @@ class MealCreate(BaseModel):
     description: str = Field(..., min_length=10, max_length=1000)
     cuisine_type: str  # e.g., "Italian", "Mexican", "Asian"
     meal_type: str  # e.g., "breakfast", "lunch", "dinner", "snack", "dessert"
-    ingredients: List[Ingredient] = []  # List of ingredients
+    ingredients: str = ""  # Comma-separated ingredient list as string
     photos: List[str] = []  # URLs to uploaded photos
     allergen_info: AllergenInfo
-    nutrition_info: Optional[NutritionInfo] = None
+    nutrition_info: Optional[str] = None
     portion_size: str  # e.g., "Serves 2", "1 portion"
     available_for_sale: bool = True
     sale_price: Optional[float] = None  # Price in USD
@@ -246,12 +246,6 @@ class MealCreate(BaseModel):
             raise ValueError("Sale price must be greater than 0 if available for sale")
         return v
 
-    @validator("ingredients")
-    def validate_ingredients(cls, v):
-        if not v or len(v) == 0:
-            raise ValueError("At least one ingredient must be provided")
-        return v
-
 
 class MealUpdate(BaseModel):
     """Update an existing meal listing"""
@@ -260,10 +254,10 @@ class MealUpdate(BaseModel):
     description: Optional[str] = Field(None, min_length=10, max_length=1000)
     cuisine_type: Optional[str] = None
     meal_type: Optional[str] = None
-    ingredients: Optional[List[Ingredient]] = None
+    ingredients: Optional[str] = None
     photos: Optional[List[str]] = None
     allergen_info: Optional[AllergenInfo] = None
-    nutrition_info: Optional[NutritionInfo] = None
+    nutrition_info: Optional[str] = None
     portion_size: Optional[str] = None
     available_for_sale: Optional[bool] = None
     sale_price: Optional[float] = None
@@ -284,10 +278,10 @@ class MealResponse(BaseModel):
     description: str
     cuisine_type: str
     meal_type: str
-    ingredients: List[Ingredient]
+    ingredients: Optional[str] = None
     photos: List[str]
-    allergen_info: AllergenInfo
-    nutrition_info: Optional[NutritionInfo]
+    allergen_info: dict
+    nutrition_info: Optional[str] = None
     portion_size: str
     available_for_sale: bool
     sale_price: Optional[float]

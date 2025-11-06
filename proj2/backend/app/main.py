@@ -1,19 +1,20 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-from .database import connect_to_mongo, close_mongo_connection, get_database
-from .routes.auth_routes import router as auth_router
-from .routes.user_routes import router as user_router
-from .routes.meal_routes import router as meal_router
+from app.database import connect_to_mongo, close_mongo_connection, get_database
+from app.routes.auth_routes import router as auth_router
+from app.routes.user_routes import router as user_router
+from app.routes.meal_routes import router as meal_router
 from pymongo import ASCENDING
+from fastapi.responses import FileResponse, JSONResponse
+import os
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await connect_to_mongo()
     yield
-    # Shutdown
     await close_mongo_connection()
 
 
@@ -23,6 +24,30 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+frontend_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+)
+
+if os.path.exists(os.path.join(frontend_path, "index.html")):
+    app.mount(
+        "/static",
+        StaticFiles(directory=os.path.join(frontend_path, "assets")),
+        name="static",
+    )
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+else:
+
+    @app.get("/")
+    async def root_fallback():
+        return JSONResponse(
+            {"message": "Welcome to Taste Buddiez API (frontend not built)"}
+        )
+
+
+@app.get("/")
+async def root():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
 
 
 @app.on_event("startup")
@@ -62,8 +87,8 @@ async def startup_event():
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -81,14 +106,21 @@ app.include_router(user_router)
 app.include_router(meal_router)
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Welcome to Taste Buddiez API",
-        "tagline": "Connecting neighbors through homemade meals",
-    }
+# @app.get("/")
+# async def root():
+#    return {
+#        "message": "Welcome to Taste Buddiez API",
+#        "tagline": "Connecting neighbors through homemade meals",
+#    }
 
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+def run():
+    """Entry point for running the app as an installed package."""
+    import uvicorn
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=5173, reload=True)
