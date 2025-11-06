@@ -41,17 +41,16 @@ jobs:
           pip install .
           pip install pytest pytest-cov codecov
           
-      - name: Create host folder for coverage
+      - name: Create coverage folder
         run: mkdir -p ./coverage_reports
 
       - name: Run tests with coverage
         run: |
           tastebuddiez setup
-          # Ensure coverage writes to mounted folder
-          tastebuddiez test all --coverage --cov-report=xml:/app/coverage_reports/coverage.xml --cov-report=html:/app/coverage_reports/htmlcov
+          tastebuddiez test all --coverage
         env:
-          COVERAGE_DIR: ./coverage_reports
-        continue-on-error: true
+          COVERAGE_XML: /app/coverage_reports/coverage.xml
+          COVERAGE_HTML: /app/coverage_reports/htmlcov
         
       - name: Upload coverage to Codecov
         if: always()
