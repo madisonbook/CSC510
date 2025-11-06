@@ -63,44 +63,6 @@ jobs:
           name: coverage-report
           path: proj2/backend/htmlcov/
           retention-days: 30
-          
-      - name: Comment PR with coverage summary
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            let body = '## 📊 Test Coverage Summary\\n\\n';
-            try {
-              if (fs.existsSync('proj2/backend/coverage.xml')) {
-                const xml = fs.readFileSync('proj2/backend/coverage.xml', 'utf8');
-                const match = xml.match(/line-rate="([0-9.]+)"/);
-                if (match) {
-                  const coverage = (parseFloat(match[1]) * 100).toFixed(1);
-                  body += '**Coverage:** ' + coverage + '%\\n\\n';
-                  if (coverage >= 80) {
-                    body += '✅ Excellent coverage (≥80%)';
-                  } else if (coverage >= 70) {
-                    body += '⚠️ Good coverage (≥70%)';
-                  } else {
-                    body += '❌ Coverage below 70%';
-                  }
-                } else {
-                  body += '⚠️ Could not parse coverage percentage';
-                }
-              } else {
-                body += '⚠️ Coverage report not found';
-              }
-            } catch (err) {
-              body += '⚠️ Error reading coverage: ' + err.message;
-            }
-            body += '\\n\\n📁 Detailed HTML report available in the workflow artifacts.';
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
             
       - name: Add coverage summary to workflow summary
         if: always()
