@@ -27,6 +27,11 @@ const AVAILABLE_CUISINES = [
   'Middle Eastern', 'French', 'German'
 ];
 
+const DIETARY_RESTRICTIONS = [
+  '🌱 Vegetarian', '🥬 Vegan', '🥩 Keto', '🌾 Gluten-Free', '🧂 Low-Sodium',
+  '🍯 Paleo', '🥛 Lactose-Free', '🫘 Kosher', '☪️ Halal'
+];
+
 export default function MyMealsTab({ userLocation, onMealsUpdate }) {
   const [meals, setMeals] = useState([]);
   const [editMeal, setEditMeal] = useState(null);
@@ -43,6 +48,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
     price: '',
     servings: '',
     allergens: [],
+    dietary_restrictions: [],
     isSwapAvailable: false,
     ingredients: '',
     nutritionInfo: '',
@@ -95,9 +101,9 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
       title: formData.name,
       description: formData.description,
       cuisine_type: formData.cuisine.replace(/^[^\w]+/, ""),
-  meal_type: "Lunch",
-  photos: [photoUrl],
-  portion_size: `${formData.servings}`,
+      meal_type: "Lunch",
+      photos: [photoUrl],
+      portion_size: `${formData.servings}`,
       available_for_sale: true,
       sale_price: parseFloat(formData.price) || 0,
       available_for_swap: formData.isSwapAvailable,
@@ -106,6 +112,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
         contains: formData.allergens,
         may_contain: [],
       },
+      dietary_restrictions: formData.dietary_restrictions,
       nutrition_info: formData.nutritionInfo,
       preparation_date: now.toISOString(),
       expires_date: expires.toISOString(),
@@ -132,6 +139,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
         price: '',
         servings: '',
         allergens: [],
+        dietary_restrictions: [],
         isSwapAvailable: false,
         ingredients: '',
         nutritionInfo: '',
@@ -173,6 +181,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
       price: meal.sale_price ?? "",
       servings: meal.portion_size ?? "",
       allergens: meal.allergen_info?.contains || [],
+      dietary_restrictions: meal.dietary_restrictions || [],
       isSwapAvailable: meal.available_for_swap || false,
       nutritionInfo: meal.nutrition_info || "",
       pickupAddress: meal.pickup_instructions || "",
@@ -205,6 +214,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
       contains: formData.allergens || [],
       may_contain: [], // optional, can keep empty
     },
+    dietary_restrictions: formData.dietary_restrictions || [],
     nutrition_info: formData.nutritionInfo || null,
     portion_size: formData.servings,
     available_for_sale: formData.availableForSale ?? true,
@@ -322,7 +332,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                       <Label htmlFor="name" className="text-sm">Meal Name *</Label>
                       <Input
                         id="name"
-                        value={formData.name}
+                        value={formData.name ?? ""}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="e.g., Homemade Lasagna"
                         required
@@ -428,7 +438,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                         id="price"
                         type="number"
                         step="0.01"
-                        value={formData.price}
+                        value={formData.price ?? ""}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                         placeholder="15.00"
                         required
@@ -440,7 +450,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                       <Input
                         id="servings"
                         type="number"
-                        value={formData.servings}
+                        value={formData.servings ?? ""}
                         onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
                         placeholder="4"
                         required
@@ -454,7 +464,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                     <Label htmlFor="pickupAddress" className="text-sm">Pickup Location</Label>
                     <Input
                       id="pickupAddress"
-                      value={formData.pickupAddress}
+                      value={formData.pickupAddress ?? ""}
                       onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
                       placeholder={userLocation?.address || "Enter pickup address"}
                       className="h-9 sm:h-10"
@@ -489,6 +499,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                       ))}
                     </div>
                   </div>
+
 
                   <Separator className="my-3 sm:my-4" />
 
@@ -639,6 +650,16 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                           </div>
                         )}
 
+                        {meal.dietary_restrictions?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {meal.dietary_restrictions.map((dietary) => (
+                            <Badge key={dietary} variant="secondary" className="text-xs">
+                              {dietary}
+                            </Badge>
+                            ))}
+                          </div>
+                        )}
+
                          {(meal.ingredients || meal.nutrition_info) && (
                           <div className="space-y-1 pt-2">
                             {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}
@@ -646,7 +667,7 @@ export default function MyMealsTab({ userLocation, onMealsUpdate }) {
                             <div className="text-xs sm:text-sm">
                               <span className="font-medium">Nutrition: </span>
                               <span className="text-muted-foreground">
-                                {meal.nutrition_info}
+                                {meal.nutrition_info || meal.nutritionInfo}
                               </span>
                             </div>
                             )}                 

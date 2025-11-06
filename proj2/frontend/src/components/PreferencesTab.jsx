@@ -21,6 +21,11 @@ const COMMON_ALLERGENS = [
   '🐟 Fish', '🍓 Soy', '🌽 Corn', '🥥 Coconut'
 ];
 
+const DIETARY_RESTRICTIONS = [
+  '🌱 Vegetarian', '🥬 Vegan', '🥩 Keto', '🌾 Gluten-Free', '🧂 Low-Sodium',
+  '🍯 Paleo', '🥛 Lactose-Free', '🫘 Kosher', '☪️ Halal'
+];
+
 export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
   const toggleArrayItem = (array, item) => {
     return array.includes(item)
@@ -41,6 +46,13 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
     onPreferencesChange({
       ...preferences,
       allergens: toggleArrayItem(preferences.allergens, allergen)
+    });
+  };
+
+  const handleDietaryToggle = (dietary) => {
+    onPreferencesChange({
+      ...preferences,
+      dietary_restrictions: toggleArrayItem(preferences.dietary_restrictions, dietary)
     });
   };
 
@@ -93,6 +105,34 @@ export function PreferencesTab({ preferences, onPreferencesChange, onSave }) {
                   onClick={() => handleAllergenToggle(allergen)}
                 >
                   {allergen}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+
+        <Card>
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+            <CardTitle className="text-lg sm:text-xl">Dietary Restrictions</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Your lifestyle choices
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="flex flex-wrap gap-2">
+              {DIETARY_RESTRICTIONS.map((dietary) => (
+                <Badge
+                  key={dietary}
+                  variant={preferences.dietary_restrictions.includes(dietary) ? "secondary" : "outline"}
+                  className={`cursor-pointer transition-all hover:scale-105 ${
+                    preferences.dietary_restrictions.includes(dietary)
+                      ? 'bg-accent hover:bg-accent/90'
+                      : 'hover:border-accent hover:text-accent-foreground'
+                  }`}
+                  onClick={() => handleDietaryToggle(dietary)}
+                >
+                  {dietary}
                 </Badge>
               ))}
             </div>

@@ -133,6 +133,19 @@ export default function MealCard({
                     </div>
                   )}
 
+                  {meal.dietary_restrictions?.length > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                      <span className="text-xs text-muted-foreground shrink-0">Contains:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {meal.dietary_restrictions.map((dietary) => (
+                          <Badge key={dietary} variant="destructive" className="text-xs">
+                            {dietary}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {(meal.ingredients || meal.nutrition_info) && (
                           <div className="space-y-1 pt-2">
                             {meal.ingredients && <div className="text-xs sm:text-sm"><span className="font-medium">Ingredients: </span><span className="text-muted-foreground">{meal.ingredients}</span></div>}
