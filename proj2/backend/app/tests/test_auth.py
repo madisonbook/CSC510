@@ -6,8 +6,7 @@ Tests user registration, login, and authentication flows
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from datetime import datetime, timedelta
-from bson import ObjectId
+from datetime import datetime
 
 TEST_DB_NAME = "test_meal_db"
 

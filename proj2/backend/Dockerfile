@@ -5,6 +5,8 @@ WORKDIR /app
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY ./app ./app
+COPY .flake8 .flake8
 COPY backend/app ./app
 COPY frontend/dist ./frontend/dist
 

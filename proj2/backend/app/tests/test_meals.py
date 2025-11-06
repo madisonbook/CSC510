@@ -7,7 +7,6 @@ import pytest
 import pytest_asyncio
 from datetime import datetime, timedelta
 from bson import ObjectId
-from fastapi import status
 from unittest.mock import patch
 
 
@@ -249,7 +248,6 @@ async def multiple_meals(mongo_client, test_user, second_user):
 @pytest.mark.asyncio
 async def test_create_meal_success(mongo_client, test_user):
     """Test successfully creating a meal"""
-    db = mongo_client[TEST_DB_NAME]
 
     meal_data = {
         "title": "Test Meal",
@@ -270,7 +268,6 @@ async def test_create_meal_success(mongo_client, test_user):
     }
 
     # Simulate creating the meal
-    from app.routes.meal_routes import create_meal
     from app.models import MealCreate
 
     meal_create = MealCreate(**meal_data)
@@ -398,32 +395,6 @@ async def test_get_all_meals(mongo_client, multiple_meals):
 
 
 @pytest.mark.asyncio
-async def test_get_meals_with_cuisine_filter(mongo_client, multiple_meals):
-    """Test filtering meals by cuisine type"""
-    db = mongo_client[TEST_DB_NAME]
-
-    italian_meals = await db.meals.find(
-        {"status": "available", "cuisine_type": "Italian"}
-    ).to_list(None)
-
-    assert len(italian_meals) == 1
-    assert italian_meals[0]["cuisine_type"] == "Italian"
-
-
-@pytest.mark.asyncio
-async def test_get_meals_with_meal_type_filter(mongo_client, multiple_meals):
-    """Test filtering meals by meal type"""
-    db = mongo_client[TEST_DB_NAME]
-
-    dinner_meals = await db.meals.find(
-        {"status": "available", "meal_type": "dinner"}
-    ).to_list(None)
-
-    assert len(dinner_meals) == 2
-    assert all(meal["meal_type"] == "dinner" for meal in dinner_meals)
-
-
-@pytest.mark.asyncio
 async def test_get_meals_with_price_filter(mongo_client, multiple_meals):
     """Test filtering meals by maximum price"""
     db = mongo_client[TEST_DB_NAME]
@@ -504,18 +475,6 @@ async def test_get_meals_empty_result(mongo_client):
 
 
 @pytest.mark.asyncio
-async def test_get_meal_by_id_success(mongo_client, sample_meal, test_user):
-    """Test successfully retrieving a meal by ID"""
-    db = mongo_client[TEST_DB_NAME]
-
-    meal = await db.meals.find_one({"_id": sample_meal["_id"]})
-
-    assert meal is not None
-    assert str(meal["_id"]) == str(sample_meal["_id"])
-    assert meal["title"] == sample_meal["title"]
-
-
-@pytest.mark.asyncio
 async def test_get_meal_by_id_increments_views(mongo_client, sample_meal):
     """Test that viewing a meal increments the view count"""
     db = mongo_client[TEST_DB_NAME]
@@ -527,17 +486,6 @@ async def test_get_meal_by_id_increments_views(mongo_client, sample_meal):
 
     updated_meal = await db.meals.find_one({"_id": sample_meal["_id"]})
     assert updated_meal["views"] == initial_views + 1
-
-
-@pytest.mark.asyncio
-async def test_get_meal_by_id_not_found(mongo_client):
-    """Test retrieving a non-existent meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    fake_id = ObjectId()
-    meal = await db.meals.find_one({"_id": fake_id})
-
-    assert meal is None
 
 
 @pytest.mark.asyncio
@@ -581,29 +529,6 @@ async def test_get_my_meals_empty(mongo_client, test_user):
 
 
 @pytest.mark.asyncio
-async def test_update_meal_success(mongo_client, sample_meal, test_user):
-    """Test successfully updating a meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    update_data = {
-        "title": "Updated Pasta Title",
-        "sale_price": 18.00,
-        "updated_at": datetime.utcnow(),
-    }
-
-    result = await db.meals.update_one(
-        {"_id": sample_meal["_id"], "seller_id": test_user["_id"]},
-        {"$set": update_data},
-    )
-
-    assert result.modified_count == 1
-
-    updated_meal = await db.meals.find_one({"_id": sample_meal["_id"]})
-    assert updated_meal["title"] == "Updated Pasta Title"
-    assert updated_meal["sale_price"] == 18.00
-
-
-@pytest.mark.asyncio
 async def test_update_meal_partial_update(mongo_client, sample_meal, test_user):
     """Test updating only some fields of a meal"""
     db = mongo_client[TEST_DB_NAME]
@@ -634,88 +559,6 @@ async def test_update_meal_status(mongo_client, sample_meal, test_user):
 
     updated_meal = await db.meals.find_one({"_id": sample_meal["_id"]})
     assert updated_meal["status"] == "sold"
-
-
-@pytest.mark.asyncio
-async def test_update_meal_not_owner(mongo_client, sample_meal, second_user):
-    """Test that non-owner cannot update meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    # Try to update with wrong user
-    result = await db.meals.update_one(
-        {"_id": sample_meal["_id"], "seller_id": second_user["_id"]},
-        {"$set": {"title": "Hacked Title"}},
-    )
-
-    assert result.matched_count == 0
-    assert result.modified_count == 0
-
-    # Verify meal unchanged
-    meal = await db.meals.find_one({"_id": sample_meal["_id"]})
-    assert meal["title"] == sample_meal["title"]
-
-
-@pytest.mark.asyncio
-async def test_update_meal_not_found(mongo_client, test_user):
-    """Test updating a non-existent meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    fake_id = ObjectId()
-    result = await db.meals.update_one(
-        {"_id": fake_id, "seller_id": test_user["_id"]},
-        {"$set": {"title": "New Title"}},
-    )
-
-    assert result.matched_count == 0
-    assert result.modified_count == 0
-
-
-# ============================================================
-# DELETE MEAL TESTS
-# ============================================================
-
-
-@pytest.mark.asyncio
-async def test_delete_meal_success(mongo_client, sample_meal, test_user):
-    """Test successfully deleting a meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    result = await db.meals.delete_one(
-        {"_id": sample_meal["_id"], "seller_id": test_user["_id"]}
-    )
-
-    assert result.deleted_count == 1
-
-    # Verify deletion
-    deleted_meal = await db.meals.find_one({"_id": sample_meal["_id"]})
-    assert deleted_meal is None
-
-
-@pytest.mark.asyncio
-async def test_delete_meal_not_owner(mongo_client, sample_meal, second_user):
-    """Test that non-owner cannot delete meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    result = await db.meals.delete_one(
-        {"_id": sample_meal["_id"], "seller_id": second_user["_id"]}
-    )
-
-    assert result.deleted_count == 0
-
-    # Verify meal still exists
-    meal = await db.meals.find_one({"_id": sample_meal["_id"]})
-    assert meal is not None
-
-
-@pytest.mark.asyncio
-async def test_delete_meal_not_found(mongo_client, test_user):
-    """Test deleting a non-existent meal"""
-    db = mongo_client[TEST_DB_NAME]
-
-    fake_id = ObjectId()
-    result = await db.meals.delete_one({"_id": fake_id, "seller_id": test_user["_id"]})
-
-    assert result.deleted_count == 0
 
 
 # ============================================================
@@ -918,7 +761,6 @@ async def test_create_meal_endpoint(
     authenticated_meal_client, mongo_client, test_user, sample_meal_data
 ):
     """Test POST /api/meals endpoint"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await authenticated_meal_client.post(
         "/api/meals/", json=sample_meal_data
@@ -939,7 +781,6 @@ async def test_create_meal_with_nutrition_info(
     authenticated_meal_client, mongo_client, sample_meal_data
 ):
     """Test creating meal with nutrition info"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await authenticated_meal_client.post(
         "/api/meals/", json=sample_meal_data
@@ -957,7 +798,6 @@ async def test_create_meal_without_nutrition_info(
     authenticated_meal_client, mongo_client, sample_meal_data
 ):
     """Test creating meal without nutrition info"""
-    db = mongo_client[TEST_DB_NAME]
 
     # Remove nutrition_info
     meal_data = sample_meal_data.copy()
@@ -1068,7 +908,6 @@ async def test_get_meals_with_meal_type_filter(
     meal_async_client, mongo_client, test_user
 ):
     """Test GET /api/meals with meal_type filter"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await meal_async_client.get("/api/meals/?meal_type=Lunch")
 
@@ -1080,7 +919,6 @@ async def test_get_meals_with_max_price_filter(
     meal_async_client, mongo_client, test_user
 ):
     """Test GET /api/meals with max_price filter"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await meal_async_client.get("/api/meals/?max_price=20.00")
 
@@ -1092,7 +930,6 @@ async def test_get_meals_with_max_price_filter(
 @pytest.mark.asyncio
 async def test_get_meals_with_sale_filter(meal_async_client, mongo_client, test_user):
     """Test GET /api/meals with available_for_sale filter"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await meal_async_client.get("/api/meals/?available_for_sale=true")
 
@@ -1102,7 +939,6 @@ async def test_get_meals_with_sale_filter(meal_async_client, mongo_client, test_
 @pytest.mark.asyncio
 async def test_get_meals_with_swap_filter(meal_async_client, mongo_client, test_user):
     """Test GET /api/meals with available_for_swap filter"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await meal_async_client.get("/api/meals/?available_for_swap=true")
 
@@ -1112,7 +948,6 @@ async def test_get_meals_with_swap_filter(meal_async_client, mongo_client, test_
 @pytest.mark.asyncio
 async def test_get_meals_with_pagination(meal_async_client, mongo_client, test_user):
     """Test GET /api/meals with skip and limit"""
-    db = mongo_client[TEST_DB_NAME]
 
     response = await meal_async_client.get("/api/meals/?skip=0&limit=10")
 

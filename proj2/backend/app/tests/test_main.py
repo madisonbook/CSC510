@@ -5,11 +5,9 @@ Tests application lifecycle, routes, middleware, and database initialization
 
 import pytest
 import pytest_asyncio
-import asyncio
 from httpx import AsyncClient, ASGITransport
 from fastapi.testclient import TestClient
 from datetime import datetime
-from bson import ObjectId
 
 TEST_DB_NAME = "test_meal_db"
 
@@ -154,7 +152,7 @@ async def test_cors_headers_present(async_client):
     # Accept presence of either allow-origin or allow-methods as evidence of CORS
     assert (
         "access-control-allow-origin" in response.headers
-        or "access-control-allow-methods" in response.headers
+        or "access" "-control-allow-methods" in response.headers
         or "vary" in response.headers
     )
 
@@ -172,10 +170,6 @@ async def test_cors_allows_all_origins(async_client):
 def test_cors_middleware_configured():
     """Test that CORS middleware is added to app"""
     from app.main import app
-    from fastapi.middleware.cors import CORSMiddleware
-
-    # Check if CORSMiddleware is in the middleware stack
-    middleware_types = [type(m) for m in app.user_middleware]
 
     # The middleware might be wrapped, so check the string representation
     has_cors = any("CORS" in str(m) for m in app.user_middleware)
@@ -585,17 +579,6 @@ async def test_startup_with_existing_indexes(mongo_client):
     # Should not raise an error
     indexes = await db.users.index_information()
     assert len(indexes) >= 1
-
-
-# ============================================================
-# CONTENT TYPE TESTS
-# ============================================================
-
-
-@pytest.mark.asyncio
-async def test_json_response_content_type(async_client):
-    """Test that JSON responses have correct content-type"""
-    response = await async_client.get("/")
 
 
 # ============================================================

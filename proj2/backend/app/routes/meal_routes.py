@@ -6,8 +6,8 @@ import os
 import uuid
 
 from ..models import MealCreate, MealUpdate, MealResponse, MealStatus
-from app.database import get_database
-from app.dependencies import get_current_user, get_optional_current_user
+from ..database import get_database
+from ..dependencies import get_current_user, get_optional_current_user
 
 router = APIRouter(prefix="/api/meals", tags=["Meals"])
 
@@ -264,7 +264,8 @@ async def get_meals(
     meal_type: Optional[str] = None,
     dietary_restriction: Optional[str] = Query(
         None,
-        description="Filter by dietary restriction: vegetarian, vegan, pescatarian, gluten-free, dairy-free, nut-free, keto, paleo",
+        description="Filter by dietary restriction: vegetarian, vegan, pescatarian,"
+        " gluten-free, dairy-free, nut-free, keto, paleo",
     ),
     max_price: Optional[float] = None,
     available_for_sale: Optional[bool] = None,
