@@ -48,9 +48,19 @@ jobs:
         run: |
           tastebuddiez setup
           tastebuddiez test all --coverage
+          CONTAINER_ID=$(docker ps -alqf "name=test_all")
+          echo "Found container: $CONTAINER_ID"
+          
+          if [ -n "$CONTAINER_ID" ]; then
+            docker cp $CONTAINER_ID:/app/coverage.xml ./coverage.xml || echo "Could not copy coverage.xml"
+            docker cp $CONTAINER_ID:/app/htmlcov ./htmlcov || echo "Could not copy htmlcov"
+          else
+            echo "No test container found"
+          fi
         env:
           COVERAGE_XML: /app/coverage_reports/coverage.xml
           COVERAGE_HTML: /app/coverage_reports/htmlcov
+          
         
       - name: Upload coverage to Codecov
         if: always()
