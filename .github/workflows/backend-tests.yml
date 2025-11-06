@@ -15,102 +15,88 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: proj2/backend
+        working-directory: proj2
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
     
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        ln -s ../tastebuddiez tastebuddiez
+        pip install .
+        pip install pytest pytest-cov codecov
+        
     - name: Build test services
       run: |
         docker compose -f proj2/docker-compose.yml --profile test build
     
-    - name: Run Auth Tests
-      run: |
-        docker compose -f proj2/docker-compose.yml --profile test up test-auth --abort-on-container-exit --exit-code-from test-auth
-    
-    - name: Run Meal Tests
-      run: |
-        docker compose -f proj2/docker-compose.yml --profile test up test-meals --abort-on-container-exit --exit-code-from test-meals
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Run User Tests
+    - name: Install docker-compose
       run: |
-        docker compose -f proj2/docker-compose.yml --profile test up test-users --abort-on-container-exit --exit-code-from test-users
-    
-    - name: Run Main App Tests
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+          
+     
+          
+    - name: Create coverage folder
+      run: mkdir -p ./coverage_reports
+
+    - name: Run tests with coverage
       run: |
-        docker compose -f proj2/docker-compose.yml --profile test up test-main --abort-on-container-exit --exit-code-from test-main
-        
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Install docker-compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
+        tastebuddiez setup
+        tastebuddiez test all --coverage --keep
           
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          ln -s ../tastebuddiez tastebuddiez
-          pip install .
-          pip install pytest pytest-cov codecov
+        CONTAINER_ID=$(docker ps -alqf "name=test_all")
+        echo "Found container: $CONTAINER_ID"
           
-      - name: Create coverage folder
-        run: mkdir -p ./coverage_reports
-
-      - name: Run tests with coverage
-        run: |
-          tastebuddiez setup
-          tastebuddiez test all --coverage --keep
-          
-          CONTAINER_ID=$(docker ps -alqf "name=test_all")
-          echo "Found container: $CONTAINER_ID"
-          
-          if [ -n "$CONTAINER_ID" ]; then
-            docker cp $CONTAINER_ID:/app/coverage.xml ./coverage.xml || echo "Could not copy coverage.xml"
-            docker cp $CONTAINER_ID:/app/htmlcov ./htmlcov || echo "Could not copy htmlcov"
-          else
-            echo "No test container found"
-          fi
-        env:
-          COVERAGE_XML: /app/coverage_reports/coverage.xml
-          COVERAGE_HTML: /app/coverage_reports/htmlcov
+        if [ -n "$CONTAINER_ID" ]; then
+          docker cp $CONTAINER_ID:/app/coverage.xml ./coverage.xml || echo "Could not copy coverage.xml"
+          docker cp $CONTAINER_ID:/app/htmlcov ./htmlcov || echo "Could not copy htmlcov"
+        else
+          echo "No test container found"
+        fi
+      env:
+        COVERAGE_XML: /app/coverage_reports/coverage.xml
+        COVERAGE_HTML: /app/coverage_reports/htmlcov
           
         
-      - name: Upload coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./proj2/backend/coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload coverage to Codecov
+      if: always()
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./proj2/backend/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
           
-      - name: Upload HTML coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: proj2/backend/htmlcov/
-          retention-days: 30
+    - name: Upload HTML coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: proj2/backend/htmlcov/
+        retention-days: 30
             
-      - name: Add coverage summary to workflow summary
-        if: always()
-        run: |
-          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
-          if [ -f coverage.xml ]; then
-            COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); cov = float(tree.getroot().attrib.get('line-rate', 0)) * 100; print(f'{cov:.1f}')" 2>/dev/null || echo "N/A")
-            echo "**Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
-          fi
+    - name: Add coverage summary to workflow summary
+      if: always()
+      run: |
+        echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        if [ -f coverage.xml ]; then
+          COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); cov = float(tree.getroot().attrib.get('line-rate', 0)) * 100; print(f'{cov:.1f}')" 2>/dev/null || echo "N/A")
+          echo "**Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+        fi
           
   summary:
     runs-on: ubuntu-latest
