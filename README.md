@@ -60,4 +60,4 @@ At Taste Buddiez, we believe food is more than just fuel — it’s a connection
 
 ## Demo Video:
 
-<video src="https://github.com/madisonbook/CSC510/blob/demovid-ce/proj2/documentation/demovideo.mp4" controls width="600"></video>
+[🎥 Watch the demo](https://github.com/madisonbook/CSC510/blob/demovid-ce/proj2/documentation/demovideo.mp4)
