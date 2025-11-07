@@ -41,7 +41,7 @@ At Taste Buddiez, we believe food is more than just fuel — it’s a connection
 
 ### 2. Build and Run the Application
 1. terminal: 'cd proj2'
-2. terminal: 'pip install .'
+2. terminal: 'pip install -e .'
 3. terminal: 'tastebuddiez setup'
 4. terminal: 'tastebuddiez start'
 5. navigate to [http://localhost:5173/](http://localhost:5173/) in your browser
