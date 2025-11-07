@@ -17,8 +17,8 @@ const AVAILABLE_CUISINES = [
 ];
 
 const COMMON_ALLERGENS = [
-  '🥜 Nuts', '🥛 Dairy', '🍳 Eggs', '🌾 Gluten', '🦐 Shellfish',
-  '🐟 Fish', '🍓 Soy', '🌽 Corn', '🥥 Coconut'
+  'nuts', 'dairy', 'eggs', 'gluten', 'shellfish',
+  'fish', 'soy', 'corn', 'coconut'
 ];
 
 const DIETARY_RESTRICTIONS = [

@@ -71,7 +71,7 @@ export default function RecommendationsTab({ preferences, userRatings, onRateRes
       //if (expirationDate <= now) return false;
 
       const cuisineMatch = !(preferences?.cuisines?.length) || preferences.cuisines.includes(meal.cuisine_type);
-      const allergenMatch = !meal.allergens?.some(a => preferences?.allergens?.includes(a));
+      const allergenMatch = !meal.allergen_info?.contains?.some(a => preferences?.allergens?.includes(a));
       const dietaryMatch = !meal.dietary_restrictions?.some(d => preferences?.dietary_restrictions?.includes(d));
       const priceLevel = mapPriceToLevel(Number(meal.sale_price));
       const priceMatch = !(preferences?.priceRange?.length) ||
