@@ -17,8 +17,8 @@ import { toast } from 'react-toastify';
 
 
 const COMMON_ALLERGENS = [
-  '🥜 Nuts', '🥛 Dairy', '🍳 Eggs', '🌾 Gluten', '🦐 Shellfish',
-  '🐟 Fish', '🍓 Soy', '🌽 Corn', '🥥 Coconut'
+  'nuts', 'dairy', 'eggs', 'gluten', 'shellfish',
+  'fish', 'soy', 'corn', 'coconut'
 ];
 
 const AVAILABLE_CUISINES = [

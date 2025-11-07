@@ -89,7 +89,11 @@ export default function Profile({ user, onUpdate }) {
 
 
   const handleDelete = async () => {
-    if(confirmDeleteAccount())
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This action cannot be undone."
+    );
+    if (!confirmed) return; // Stop if user cancels
+    
     try {
       const res = await fetch("http://localhost:8000/api/users/me", {
         method: "DELETE",
